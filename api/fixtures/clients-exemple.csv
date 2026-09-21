@@ -1,0 +1,6 @@
+N° Client;Type de client;Civilité;Nom;Prénom;Société;Téléphone;Email;Adresse;Code postal;Ville;SIRET;N° TVA;Chantier;Adresse chantier;CP chantier;Ville chantier;Commentaire
+CLI-0101;Particulier;M.;Dubois;Marc;;06.11.22.33.44;marc.dubois@example.com;14 rue des Peupliers;31400;Toulouse;;;Rénovation salle de bain;14 rue des Peupliers;31400;Toulouse;Client fidèle depuis 2023
+CLI-0102;Particulier;Mme;Lefèvre;Sophie;;0622334455;sophie.lefevre@example.com;8 impasse du Moulin;31170;Tournefeuille;;;Isolation combles;8 impasse du Moulin;31170;Tournefeuille;
+CLI-0103;Professionnel;;;;SCI Les Tilleuls;05 61 22 33 44;contact@scitilleuls.fr;25 avenue Jean Jaurès;31000;Toulouse;73282932000074;FR40303265045;Ravalement façade;25 avenue Jean Jaurès;31000;Toulouse;Paiement à 30 jours
+CLI-0104;Pro;;;;Boulangerie Martin SARL;0561998877;gerant@boulangerie-martin.fr;3 place du Capitole;31000;Toulouse;44306184100047;;Aménagement fournil;3 place du Capitole;31000;Toulouse;
+CLI-0105;Particulier;M.;Garnier;Philippe;;+33 6 44 55 66 77;p.garnier@example.com;42 chemin de la Garonne;31120;Portet-sur-Garonne;;;Terrasse bois;42 chemin de la Garonne;31120;Portet-sur-Garonne;Devis à relancer

@@ -1,0 +1,56 @@
+<mat-toolbar color="primary" class="barre">
+  <button matIconButton type="button" aria-label="Afficher ou masquer le menu" (click)="basculerTiroir()">
+    <mat-icon>menu</mat-icon>
+  </button>
+
+  <span class="barre__titre">CJA <span class="barre__titre-suite">Devis &amp; Facturation</span></span>
+
+  <span class="barre__espace"></span>
+
+  <button matButton type="button" [matMenuTriggerFor]="menuCompte">
+    <mat-icon>account_circle</mat-icon>
+    <span class="barre__utilisateur">{{ libelleUtilisateur() }}</span>
+  </button>
+
+  <mat-menu #menuCompte>
+    <button mat-menu-item type="button" (click)="deconnexion()">
+      <mat-icon>logout</mat-icon>
+      <span>Se déconnecter</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>
+
+<mat-sidenav-container class="conteneur">
+  <mat-sidenav
+    class="tiroir"
+    [mode]="estCompact() ? 'over' : 'side'"
+    [opened]="tiroirOuvert()"
+    (closedStart)="tiroirOuvert.set(false)"
+  >
+    <mat-nav-list>
+      @for (entree of entrees; track entree.chemin) {
+        <a
+          mat-list-item
+          [routerLink]="entree.chemin"
+          routerLinkActive
+          #lien="routerLinkActive"
+          [activated]="lien.isActive"
+          (click)="fermerSiCompact()"
+        >
+          <mat-icon matListItemIcon>{{ entree.icone }}</mat-icon>
+          <span matListItemTitle>{{ entree.libelle }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <mat-divider />
+
+    <p class="tiroir__note">
+      Lot 1 — base clientèle. Les devis, factures et PDF arrivent au lot suivant.
+    </p>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="contenu">
+    <router-outlet />
+  </mat-sidenav-content>
+</mat-sidenav-container>

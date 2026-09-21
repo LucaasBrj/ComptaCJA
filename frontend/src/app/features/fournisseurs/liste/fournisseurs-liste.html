@@ -1,0 +1,124 @@
+<header class="entete">
+  <div>
+    <h1 class="entete__titre">Fournisseurs</h1>
+    <p class="entete__sous-titre">
+      {{ total() }} fournisseur(s). Cet annuaire alimentera les annexes de débours.
+    </p>
+  </div>
+
+  <button matButton="filled" type="button" (click)="ajouter()">
+    <mat-icon>add_business</mat-icon>
+    Nouveau fournisseur
+  </button>
+</header>
+
+<mat-card class="carte">
+  <div class="filtres">
+    <mat-form-field class="filtres__recherche">
+      <mat-label>Rechercher un fournisseur</mat-label>
+      <input
+        matInput
+        type="search"
+        [ngModel]="recherche"
+        (ngModelChange)="surSaisieRecherche($event)"
+        placeholder="BigMat, Point.P…"
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  @if (chargement()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tableau-defilant">
+    <table mat-table [dataSource]="fournisseurs()">
+      <ng-container matColumnDef="nom">
+        <th mat-header-cell *matHeaderCellDef>Nom</th>
+        <td mat-cell *matCellDef="let fournisseur">
+          <strong>{{ fournisseur.nom }}</strong>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="contact">
+        <th mat-header-cell *matHeaderCellDef>Contact</th>
+        <td mat-cell *matCellDef="let fournisseur">
+          <div class="contact">
+            @if (fournisseur.contactNom) {
+              <span>{{ fournisseur.contactNom }}</span>
+            }
+            @if (fournisseur.telephone) {
+              <span class="contact__secondaire">{{ fournisseur.telephone }}</span>
+            }
+            @if (!fournisseur.contactNom && !fournisseur.telephone) {
+              <span class="vide">—</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="commune">
+        <th mat-header-cell *matHeaderCellDef>Adresse</th>
+        <td mat-cell *matCellDef="let fournisseur">
+          {{ adresseEnUneLigne(fournisseur.adresse) || '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="siteWeb">
+        <th mat-header-cell *matHeaderCellDef>Site web</th>
+        <td mat-cell *matCellDef="let fournisseur">
+          @if (fournisseur.siteWeb) {
+            <a [href]="fournisseur.siteWeb" target="_blank" rel="noopener noreferrer">
+              {{ fournisseur.siteWeb }}
+            </a>
+          } @else {
+            <span class="vide">—</span>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef aria-label="Actions"></th>
+        <td mat-cell *matCellDef="let fournisseur" class="colonne-actions">
+          <button
+            matIconButton
+            type="button"
+            (click)="modifier(fournisseur)"
+            matTooltip="Modifier"
+            aria-label="Modifier le fournisseur"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button
+            matIconButton
+            type="button"
+            (click)="supprimer(fournisseur)"
+            matTooltip="Supprimer"
+            aria-label="Supprimer le fournisseur"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colonnes"></tr>
+      <tr mat-row *matRowDef="let ligne; columns: colonnes"></tr>
+    </table>
+  </div>
+
+  @if (!chargement() && fournisseurs().length === 0) {
+    <div class="vide-etat">
+      <mat-icon>local_shipping</mat-icon>
+      <p>Aucun fournisseur enregistré.</p>
+      <button matButton="filled" type="button" (click)="ajouter()">Ajouter le premier</button>
+    </div>
+  }
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="page"
+    [pageSize]="parPage"
+    [pageSizeOptions]="[10, 25, 50]"
+    (page)="surPagination($event)"
+  />
+</mat-card>

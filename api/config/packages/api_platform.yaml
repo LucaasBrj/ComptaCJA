@@ -1,0 +1,21 @@
+api_platform:
+    title: 'CJA - Devis, Facturation & Gestion BTP'
+    description: "API de gestion des clients, chantiers, devis et factures pour l'artisan du BTP."
+    version: 1.0.0
+
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+
+    defaults:
+        stateless: true
+        pagination_items_per_page: 30
+        pagination_maximum_items_per_page: 100
+        pagination_client_items_per_page: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+
+    # Les erreurs de validation doivent rester exploitables par le frontend Angular
+    # (violations detaillees champ par champ).
+    exception_to_status:
+        Symfony\Component\Serializer\Exception\ExceptionInterface: 400

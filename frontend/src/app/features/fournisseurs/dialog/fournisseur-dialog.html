@@ -1,0 +1,70 @@
+<h2 mat-dialog-title>{{ modeEdition ? 'Modifier le fournisseur' : 'Nouveau fournisseur' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="formulaire" class="formulaire" (ngSubmit)="soumettre()">
+    <mat-form-field>
+      <mat-label>Nom du fournisseur</mat-label>
+      <input matInput formControlName="nom" placeholder="BigMat Toulouse" />
+      @if (formulaire.controls.nom.hasError('required')) {
+        <mat-error>Le nom est obligatoire.</mat-error>
+      }
+      @if (erreurServeur(formulaire.controls.nom)) {
+        <mat-error>{{ erreurServeur(formulaire.controls.nom) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="paire">
+      <mat-form-field>
+        <mat-label>Interlocuteur</mat-label>
+        <input matInput formControlName="contactNom" />
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Téléphone</mat-label>
+        <input matInput formControlName="telephone" inputmode="tel" />
+      </mat-form-field>
+    </div>
+
+    <div class="paire">
+      <mat-form-field>
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+        @if (formulaire.controls.email.hasError('email')) {
+          <mat-error>Cet email n'est pas valide.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field>
+        <mat-label>Site web</mat-label>
+        <input matInput formControlName="siteWeb" placeholder="https://…" />
+        @if (erreurServeur(formulaire.controls.siteWeb)) {
+          <mat-error>{{ erreurServeur(formulaire.controls.siteWeb) }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field>
+      <mat-label>SIRET</mat-label>
+      <input matInput formControlName="siret" inputmode="numeric" maxlength="14" />
+      @if (erreurServeur(formulaire.controls.siret)) {
+        <mat-error>{{ erreurServeur(formulaire.controls.siret) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <app-adresse-champs [groupe]="formulaire.controls.adresse" />
+
+    <mat-form-field>
+      <mat-label>Notes</mat-label>
+      <textarea matInput formControlName="notes" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-checkbox formControlName="actif">Fournisseur actif</mat-checkbox>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close>Annuler</button>
+  <button matButton="filled" type="button" [disabled]="enregistrement()" (click)="soumettre()">
+    {{ modeEdition ? 'Enregistrer' : 'Ajouter' }}
+  </button>
+</mat-dialog-actions>

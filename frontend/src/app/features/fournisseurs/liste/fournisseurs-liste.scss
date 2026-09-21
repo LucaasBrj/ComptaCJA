@@ -1,0 +1,81 @@
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.carte {
+  padding: 0;
+  overflow: hidden;
+}
+
+.filtres {
+  padding: 1rem 1rem 0;
+
+  &__recherche {
+    width: 100%;
+    max-width: 24rem;
+  }
+}
+
+.tableau-defilant {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+
+  &__secondaire {
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.vide {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.colonne-actions {
+  width: 6rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.vide-etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 1rem;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}

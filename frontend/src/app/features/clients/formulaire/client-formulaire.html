@@ -1,0 +1,165 @@
+<header class="entete">
+  <a matIconButton routerLink="/clients" aria-label="Retour à la liste">
+    <mat-icon>arrow_back</mat-icon>
+  </a>
+  <div>
+    <h1 class="entete__titre">
+      {{ modeEdition() ? 'Modifier le client' : 'Nouveau client' }}
+    </h1>
+    @if (numeroClient()) {
+      <p class="entete__sous-titre">{{ numeroClient() }}</p>
+    } @else {
+      <p class="entete__sous-titre">Le numéro de client est attribué automatiquement.</p>
+    }
+  </div>
+</header>
+
+<form [formGroup]="formulaire" (ngSubmit)="soumettre()">
+  @if (chargement() || enregistrement()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title>Identité</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="grille">
+      <mat-form-field class="grille__moitie">
+        <mat-label>Typologie</mat-label>
+        <mat-select formControlName="typologie">
+          @for (item of typologies; track item.valeur) {
+            <mat-option [value]="item.valeur">{{ item.libelle }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (estProfessionnel()) {
+        <mat-form-field class="grille__moitie">
+          <mat-label>Raison sociale</mat-label>
+          <input matInput formControlName="raisonSociale" />
+          @if (formulaire.controls['raisonSociale'].hasError('required')) {
+            <mat-error>La raison sociale est obligatoire pour un professionnel.</mat-error>
+          }
+          @if (erreurServeur(formulaire.controls['raisonSociale'])) {
+            <mat-error>{{ erreurServeur(formulaire.controls['raisonSociale']) }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>SIRET</mat-label>
+          <input matInput formControlName="siret" inputmode="numeric" maxlength="14" />
+          <mat-hint>14 chiffres</mat-hint>
+          @if (formulaire.controls['siret'].hasError('required')) {
+            <mat-error>Le SIRET est obligatoire pour un professionnel.</mat-error>
+          } @else if (formulaire.controls['siret'].hasError('pattern')) {
+            <mat-error>Le SIRET doit comporter exactement 14 chiffres.</mat-error>
+          }
+          @if (erreurServeur(formulaire.controls['siret'])) {
+            <mat-error>{{ erreurServeur(formulaire.controls['siret']) }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>N° TVA intracommunautaire</mat-label>
+          <input matInput formControlName="numeroTvaIntracom" placeholder="FR12345678901" />
+          @if (erreurServeur(formulaire.controls['numeroTvaIntracom'])) {
+            <mat-error>{{ erreurServeur(formulaire.controls['numeroTvaIntracom']) }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>Nom du contact</mat-label>
+          <input matInput formControlName="nom" />
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>Prénom du contact</mat-label>
+          <input matInput formControlName="prenom" />
+        </mat-form-field>
+      } @else {
+        <mat-form-field class="grille__quart">
+          <mat-label>Civilité</mat-label>
+          <mat-select formControlName="civilite">
+            <mat-option [value]="null">—</mat-option>
+            @for (civilite of civilites; track civilite) {
+              <mat-option [value]="civilite">{{ civilite }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>Nom</mat-label>
+          <input matInput formControlName="nom" />
+          @if (formulaire.controls['nom'].hasError('required')) {
+            <mat-error>Le nom est obligatoire pour un particulier.</mat-error>
+          }
+          @if (erreurServeur(formulaire.controls['nom'])) {
+            <mat-error>{{ erreurServeur(formulaire.controls['nom']) }}</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="grille__moitie">
+          <mat-label>Prénom</mat-label>
+          <input matInput formControlName="prenom" />
+        </mat-form-field>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title>Coordonnées</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="grille">
+      <mat-form-field class="grille__moitie">
+        <mat-label>Téléphone</mat-label>
+        <input matInput formControlName="telephone" inputmode="tel" autocomplete="tel" />
+        @if (erreurServeur(formulaire.controls['telephone'])) {
+          <mat-error>{{ erreurServeur(formulaire.controls['telephone']) }}</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field class="grille__moitie">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" autocomplete="email" />
+        @if (formulaire.controls['email'].hasError('email')) {
+          <mat-error>Cet email n'est pas valide.</mat-error>
+        }
+        @if (erreurServeur(formulaire.controls['email'])) {
+          <mat-error>{{ erreurServeur(formulaire.controls['email']) }}</mat-error>
+        }
+      </mat-form-field>
+
+      <div class="grille__pleine">
+        <app-adresse-champs
+          [groupe]="$any(formulaire.controls['adresseFacturation'])"
+          libelleLigne1="Adresse de facturation"
+        />
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="section">
+    <mat-card-header>
+      <mat-card-title>Notes internes</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content class="grille">
+      <mat-form-field class="grille__pleine">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="3"></textarea>
+      </mat-form-field>
+
+      <mat-checkbox formControlName="actif">Fiche active</mat-checkbox>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="actions">
+    <a matButton routerLink="/clients">Annuler</a>
+    <button matButton="filled" type="submit" [disabled]="enregistrement()">
+      {{ modeEdition() ? 'Enregistrer' : 'Créer le client' }}
+    </button>
+  </div>
+</form>

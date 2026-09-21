@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.barre {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  gap: 0.5rem;
+
+  &__titre {
+    font: var(--mat-sys-title-medium);
+    white-space: nowrap;
+  }
+
+  // Le sous-titre disparait sur tablette en portrait, ou la place manque.
+  &__titre-suite {
+    @media (max-width: 599px) {
+      display: none;
+    }
+  }
+
+  &__espace {
+    flex: 1 1 auto;
+  }
+
+  &__utilisateur {
+    @media (max-width: 599px) {
+      display: none;
+    }
+  }
+}
+
+.conteneur {
+  flex: 1 1 auto;
+  background-color: var(--mat-sys-surface-container-low);
+}
+
+.tiroir {
+  width: 15rem;
+  display: flex;
+  flex-direction: column;
+
+  &__note {
+    margin-top: auto;
+    padding: 1rem;
+    font: var(--mat-sys-body-small);
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.contenu {
+  padding: 1.5rem;
+
+  @media (max-width: 599px) {
+    padding: 1rem 0.75rem;
+  }
+}

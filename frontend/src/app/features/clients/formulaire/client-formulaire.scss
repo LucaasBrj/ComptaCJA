@@ -1,0 +1,51 @@
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.section {
+  margin-bottom: 1rem;
+}
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+
+  @media (max-width: 899px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  &__quart {
+    grid-column: span 1;
+  }
+
+  &__moitie {
+    grid-column: span 2;
+  }
+
+  &__pleine {
+    grid-column: 1 / -1;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+}

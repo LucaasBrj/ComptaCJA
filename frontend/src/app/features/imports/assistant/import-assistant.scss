@@ -1,0 +1,185 @@
+.entete {
+  margin-bottom: 1.25rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    max-width: 44rem;
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-medium);
+  }
+}
+
+.etape {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+
+  &__type {
+    max-width: 24rem;
+  }
+
+  &__intro {
+    margin: 0;
+    max-width: 48rem;
+    font: var(--mat-sys-body-medium);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+}
+
+.depot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  border: 2px dashed var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-medium);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 150ms ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--mat-sys-primary);
+  }
+
+  // L'input reste accessible au clavier tout en laissant le label faire le rendu.
+  &__entree {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  mat-icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--mat-sys-primary);
+  }
+
+  &__libelle {
+    font: var(--mat-sys-title-small);
+    overflow-wrap: anywhere;
+  }
+
+  &__aide {
+    color: var(--mat-sys-on-surface-variant);
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.mapping {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.obligatoire {
+  color: var(--mat-sys-error);
+}
+
+.sous-titre {
+  margin: 0.5rem 0 0;
+  font: var(--mat-sys-title-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.alerte {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--mat-sys-corner-small);
+  background-color: var(--mat-sys-surface-container-high);
+  font: var(--mat-sys-body-medium);
+
+  &--erreur {
+    background-color: var(--mat-sys-error-container);
+    color: var(--mat-sys-on-error-container);
+  }
+
+  &--succes {
+    background-color: var(--mat-sys-tertiary-container);
+    color: var(--mat-sys-on-tertiary-container);
+  }
+}
+
+.tableau-defilant {
+  overflow-x: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--mat-sys-corner-small);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.apercu {
+  font: var(--mat-sys-body-small);
+
+  th,
+  td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+
+  th {
+    background-color: var(--mat-sys-surface-container);
+    font-weight: 600;
+  }
+}
+
+.bilan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+
+  &__carte {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 8rem;
+    padding: 1rem 1.5rem;
+    border-radius: var(--mat-sys-corner-medium);
+    background-color: var(--mat-sys-surface-container-high);
+
+    &--succes {
+      background-color: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container);
+    }
+
+    &--erreur {
+      background-color: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+  }
+
+  &__valeur {
+    font: var(--mat-sys-headline-medium);
+  }
+
+  &__libelle {
+    font: var(--mat-sys-body-small);
+  }
+}
+
+.messages {
+  margin: 0;
+  padding-left: 1.1rem;
+  font: var(--mat-sys-body-small);
+}

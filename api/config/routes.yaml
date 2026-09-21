@@ -1,0 +1,10 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+controllers:
+    resource: routing.controllers
+
+# Point d'entree de l'authentification : intercepte par le firewall "login",
+# il n'a donc pas de controleur.
+api_login_check:
+    path: /api/login_check
+    methods: [POST]

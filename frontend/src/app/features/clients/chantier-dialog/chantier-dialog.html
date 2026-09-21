@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>{{ modeEdition ? 'Modifier le chantier' : 'Nouveau chantier' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="formulaire" class="formulaire" (ngSubmit)="soumettre()">
+    <mat-form-field>
+      <mat-label>Libellé du chantier</mat-label>
+      <input matInput formControlName="libelle" placeholder="Rénovation salle de bain" />
+      <mat-hint>Ce libellé identifiera le chantier dans vos devis et factures.</mat-hint>
+      @if (formulaire.controls.libelle.hasError('required')) {
+        <mat-error>Le libellé est obligatoire.</mat-error>
+      }
+      @if (erreurServeur(formulaire.controls.libelle)) {
+        <mat-error>{{ erreurServeur(formulaire.controls.libelle) }}</mat-error>
+      }
+    </mat-form-field>
+
+    <app-adresse-champs [groupe]="formulaire.controls.adresse" libelleLigne1="Adresse du chantier" />
+
+    <mat-form-field>
+      <mat-label>Notes d'accès, contraintes de chantier…</mat-label>
+      <textarea matInput formControlName="notes" rows="2"></textarea>
+    </mat-form-field>
+
+    <mat-checkbox formControlName="actif">Chantier actif</mat-checkbox>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" mat-dialog-close>Annuler</button>
+  <button matButton="filled" type="button" [disabled]="enregistrement()" (click)="soumettre()">
+    {{ modeEdition ? 'Enregistrer' : 'Ajouter' }}
+  </button>
+</mat-dialog-actions>

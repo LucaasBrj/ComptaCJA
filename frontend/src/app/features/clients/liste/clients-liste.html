@@ -1,0 +1,138 @@
+<header class="entete">
+  <div>
+    <h1 class="entete__titre">Clients</h1>
+    <p class="entete__sous-titre">{{ total() }} fiche(s) au total</p>
+  </div>
+
+  <div class="entete__actions">
+    <a matButton="outlined" routerLink="/imports">
+      <mat-icon>upload_file</mat-icon>
+      Importer un fichier
+    </a>
+    <a matButton="filled" routerLink="/clients/nouveau">
+      <mat-icon>person_add</mat-icon>
+      Nouveau client
+    </a>
+  </div>
+</header>
+
+<mat-card class="carte">
+  <div class="filtres">
+    <mat-form-field class="filtres__recherche">
+      <mat-label>Rechercher</mat-label>
+      <input
+        matInput
+        type="search"
+        [ngModel]="recherche"
+        (ngModelChange)="surSaisieRecherche($event)"
+        placeholder="Nom, numéro de client, email…"
+      />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field class="filtres__typologie">
+      <mat-label>Typologie</mat-label>
+      <mat-select [(ngModel)]="typologie" (ngModelChange)="surChangementTypologie()">
+        <mat-option value="">Toutes</mat-option>
+        @for (item of typologies; track item.valeur) {
+          <mat-option [value]="item.valeur">{{ item.libelle }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <button matButton type="button" (click)="reinitialiser(tri)">Réinitialiser</button>
+  </div>
+
+  @if (chargement()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  <div class="tableau-defilant">
+    <table mat-table [dataSource]="clients()" matSort #tri="matSort" (matSortChange)="surTri($event)">
+      <ng-container matColumnDef="numeroClient">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>N° client</th>
+        <td mat-cell *matCellDef="let client">
+          <span class="mono">{{ client.numeroClient }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="nom">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="nom">Nom / Raison sociale</th>
+        <td mat-cell *matCellDef="let client">
+          <strong>{{ client.nomAffichage }}</strong>
+          @if (client.importe) {
+            <mat-icon class="badge-importe" matTooltip="Fiche issue d'un import">cloud_download</mat-icon>
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="typologie">
+        <th mat-header-cell *matHeaderCellDef>Typologie</th>
+        <td mat-cell *matCellDef="let client">
+          <mat-chip-set>
+            <mat-chip [highlighted]="client.typologie === 'PROFESSIONNEL'">
+              {{ client.typologie === 'PROFESSIONNEL' ? 'Professionnel' : 'Particulier' }}
+            </mat-chip>
+          </mat-chip-set>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="contact">
+        <th mat-header-cell *matHeaderCellDef>Contact</th>
+        <td mat-cell *matCellDef="let client">
+          <div class="contact">
+            @if (client.telephone) {
+              <span>{{ client.telephone }}</span>
+            }
+            @if (client.email) {
+              <span class="contact__email">{{ client.email }}</span>
+            }
+            @if (!client.telephone && !client.email) {
+              <span class="vide">—</span>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="commune">
+        <th mat-header-cell *matHeaderCellDef>Commune</th>
+        <td mat-cell *matCellDef="let client">
+          {{ client.adresseFacturation?.ville || '—' }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef aria-label="Actions"></th>
+        <td mat-cell *matCellDef="let client" class="colonne-actions">
+          <a
+            matIconButton
+            [routerLink]="['/clients', identifiant(client)]"
+            matTooltip="Ouvrir la fiche"
+            aria-label="Ouvrir la fiche"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </a>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="colonnes"></tr>
+      <tr mat-row *matRowDef="let client; columns: colonnes" class="ligne" (click)="ouvrir(client)"></tr>
+    </table>
+  </div>
+
+  @if (!chargement() && clients().length === 0) {
+    <div class="vide-etat">
+      <mat-icon>search_off</mat-icon>
+      <p>Aucun client ne correspond à votre recherche.</p>
+      <a matButton="filled" routerLink="/clients/nouveau">Créer le premier client</a>
+    </div>
+  }
+
+  <mat-paginator
+    [length]="total()"
+    [pageIndex]="page"
+    [pageSize]="parPage"
+    [pageSizeOptions]="[10, 25, 50, 100]"
+    (page)="surPagination($event)"
+  />
+</mat-card>

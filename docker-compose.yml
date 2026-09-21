@@ -1,0 +1,44 @@
+services:
+  database:
+    image: postgres:17-alpine
+    container_name: cja_database
+    environment:
+      POSTGRES_DB: cja
+      POSTGRES_USER: cja
+      POSTGRES_PASSWORD: cja
+      # Evite les problemes de collation lors des imports de fichiers clients accentues
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cja -d cja"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Provisionne des maintenant, branche au Lot 2 pour la generation des PDF
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: cja_gotenberg
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    ports:
+      - "3000:3000"
+
+  adminer:
+    image: adminer:latest
+    container_name: cja_adminer
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: database
+    ports:
+      - "8081:8080"
+
+volumes:
+  database_data:

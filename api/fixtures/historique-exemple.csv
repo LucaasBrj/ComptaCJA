@@ -1,0 +1,7 @@
+Numéro;Nature;Date;Échéance;Client;Désignation;Total HT;Total TVA;Total TTC;État;Chantier
+DV2026-01-001;Devis;15/01/2026;15/02/2026;CLI-0101;Rénovation complète salle de bain;4 250,00;425,00;4 675,00;Accepté;Rénovation salle de bain
+FC2026-02-001;Facture;28/02/2026;30/03/2026;CLI-0101;Rénovation complète salle de bain;4 250,00;425,00;4 675,00;Payé;Rénovation salle de bain
+DV2026-02-002;Devis;10/02/2026;;CLI-0102;Isolation des combles perdus;2 800,00;154,00;2 954,00;Accepté;Isolation combles
+FA2026-03-001;Acompte;05/03/2026;;CLI-0102;Acompte 30% isolation combles;840,00;46,20;886,20;Payé;Isolation combles
+DV2026-03-003;Devis;20/03/2026;20/04/2026;CLI-0103;Ravalement de façade 180 m²;12 600,00;2 520,00;15 120,00;Envoyé;Ravalement façade
+FC2026-04-002;Facture;12/04/2026;12/05/2026;CLI-0104;Aménagement du fournil;8 900,00;1 780,00;10 680,00;Impayé;Aménagement fournil
