@@ -1,7 +1,7 @@
 # CJA — Devis, facturation et suivi de chantier
 
 Application de gestion pour artisan du bâtiment : base clientèle, chantiers, fournisseurs,
-devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)**, le **Lot 2 (devis, prestations, PDF)** et le **Lot 3 (acomptes, solde, débours)**.
+devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)**, le **Lot 2 (devis, prestations, PDF)**, le **Lot 3 (acomptes, solde, débours)** et le **Lot 4 (recherche, duplication, suivi)**.
 
 - `api/` — Symfony 7.4 LTS + API Platform 4.4 (PHP 8.5)
 - `frontend/` — Angular 22 + Angular Material
@@ -25,7 +25,13 @@ colima start
 - **PDF** via Gotenberg (`GOTENBERG_URL`, défaut `http://127.0.0.1:3000/`) : en-tête, décennale, IBAN, pénalités, indemnité de 40 €, mention « TVA non applicable, art. 293 B du CGI » si le régime est la franchise et qu'une ligne est à 0 %.
 - **Réglages** : fiche entreprise unique, valeurs d'exemple à remplacer dans l'application.
 
-La duplication, la recherche globale et les tableaux de bord restent au lot 4.
+## Ce que couvre le Lot 4
+
+- **Recherche** : le champ de la barre interroge `GET /api/recherche?q=` (au moins deux caractères) sur le nom du client, le numéro de pièce, le libellé d'une ligne et la commune du chantier.
+- **Duplication** : sur un devis, **Dupliquer** appelle `POST /api/documents/{id}/dupliquer` et ouvre un nouveau brouillon `DV…` aux mêmes lignes de texte et de prestation. Une facture ne se duplique pas.
+- **Tableau de bord** : page d'accueil, compteurs en nombre et en TTC pour les pièces envoyées, acceptées, payées, et celles dont l'échéance est dépassée. Le retard se filtre avec `enRetard=1`, sans changer le statut enregistré.
+- **Inaltérabilité** : le tableau signale une pièce déjà émise dont le verrou est absent.
+- **Export comptable** : `GET /api/exports/comptable?du=YYYY-MM-DD&au=YYYY-MM-DD` renvoie les factures de prestation et d'acompte déjà envoyées, avec une colonne de TVA par taux.
 
 ## Ce que couvre le Lot 3
 
@@ -115,9 +121,5 @@ cd api && php bin/phpunit
 
 Les tests repartent d'un schéma vierge à chaque cas et couvrent le refus d'accès sans
 jeton, la numérotation séquentielle, la validation du SIRET, les filtres de recherche,
-l'assistant d'importation, le calcul de TVA, le PDF et les acomptes.
-
-## Hors périmètre à ce stade
-
-La duplication, la recherche globale, les tableaux de bord et l'export comptable restent
-au lot 4.
+l'assistant d'importation, le calcul de TVA, le PDF, les acomptes, la recherche, la
+duplication, l'export comptable et le retard.

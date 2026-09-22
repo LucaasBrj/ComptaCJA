@@ -11,7 +11,7 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { DocumentApiService } from '../../../core/http/document-api.service';
 import { identifiantDepuisIri } from '../../../core/iri';
@@ -45,6 +45,7 @@ import { DocumentDetail, ResumeClient } from '../../../core/models/document.mode
 })
 export class DocumentsListe {
   private readonly api = inject(DocumentApiService);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly colonnes = ['numero', 'type', 'client', 'dateEmission', 'montantTtc', 'statut'];
   protected readonly documents = signal<readonly DocumentDetail[]>([]);
@@ -63,6 +64,7 @@ export class DocumentsListe {
   protected recherche = '';
   protected type = '';
   protected statut = '';
+  protected enRetard = false;
   protected page = 0;
   protected parPage = 30;
 
@@ -77,7 +79,12 @@ export class DocumentsListe {
         this.charger();
       });
 
-    this.charger();
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      this.statut = params.get('statut') ?? '';
+      this.enRetard = params.get('enRetard') === '1';
+      this.page = 0;
+      this.charger();
+    });
   }
 
   protected surSaisieRecherche(terme: string): void {
@@ -120,6 +127,7 @@ export class DocumentsListe {
         recherche: this.recherche,
         type: this.type,
         statut: this.statut,
+        enRetard: this.enRetard,
         page: this.page,
         parPage: this.parPage,
       })

@@ -38,6 +38,11 @@
         Facture de solde
       </button>
     }
+    @if (id() && !legacy() && formulaire.controls.type.value === 'DEVIS') {
+      <button matButton="outlined" type="button" (click)="dupliquer()" [disabled]="enregistrement()">
+        Dupliquer
+      </button>
+    }
     @if (id() && !legacy() && (formulaire.controls.type.value === 'DEVIS' || formulaire.controls.type.value === 'FACTURE')) {
       <button matButton="outlined" type="button" (click)="creerAnnexe()" [disabled]="enregistrement()">
         Annexe de débours

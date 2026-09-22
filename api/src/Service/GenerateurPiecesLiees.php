@@ -92,6 +92,32 @@ final class GenerateurPiecesLiees
         return $this->persister($piece);
     }
 
+    public function dupliquer(Document $source): Document
+    {
+        if ($source->isLegacy() || TypeDocument::DEVIS !== $source->getType()) {
+            $this->rejeter('Seul un devis peut etre duplique.', 'type');
+        }
+
+        $copie = (new Document())
+            ->setType(TypeDocument::DEVIS)
+            ->setStatut(StatutDocument::BROUILLON)
+            ->setDateEmission(new \DateTimeImmutable('today'))
+            ->setClient($source->getClient())
+            ->setChantier($source->getChantier())
+            ->setObjet($source->getObjet())
+            ->setTauxAcompte($source->getTauxAcompte());
+
+        foreach ($source->getLignes() as $ligne) {
+            if (!\in_array($ligne->getType(), [TypeLigne::TEXTE, TypeLigne::PRESTATION], true)) {
+                continue;
+            }
+
+            $this->copierLigne($copie, $ligne);
+        }
+
+        return $this->persister($copie);
+    }
+
     public function annexeDebours(Document $source): Document
     {
         if ($source->isLegacy()) {

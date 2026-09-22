@@ -1,0 +1,51 @@
+<header class="entete">
+  <div>
+    <h1 class="entete__titre">Tableau de bord</h1>
+    <p class="entete__sous-titre">Pièces en attente, acceptées, payées et en retard.</p>
+  </div>
+</header>
+
+@if (chargement()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<div class="cartes">
+  @for (carte of cartes; track carte.cle) {
+    <a class="carte" [routerLink]="['/documents']" [queryParams]="carte.lien">
+      <mat-icon>{{ carte.icone }}</mat-icon>
+      <p class="carte__libelle">{{ carte.libelle }}</p>
+      <p class="carte__nombre">{{ compteur(carte.cle).nombre }}</p>
+      <p class="carte__montant">{{ +compteur(carte.cle).montantTtc | currency: 'EUR' }}</p>
+    </a>
+  }
+</div>
+
+@if (synthese(); as synthese) {
+  <p class="anomalie" [class.anomalie--alerte]="synthese.anomalies > 0">
+    <mat-icon>{{ synthese.anomalies > 0 ? 'gpp_bad' : 'verified' }}</mat-icon>
+    @if (synthese.anomalies === 0) {
+      Aucune anomalie d'inaltérabilité.
+    } @else {
+      {{ synthese.anomalies }} pièce(s) émise(s) sans verrou.
+    }
+  </p>
+}
+
+<mat-card class="export">
+  <h2>Export comptable</h2>
+  <p>Factures de prestation et d'acompte déjà envoyées, entre les deux dates.</p>
+  <form [formGroup]="exportForm" class="export__form">
+    <mat-form-field>
+      <mat-label>Du</mat-label>
+      <input matInput type="date" formControlName="du" />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Au</mat-label>
+      <input matInput type="date" formControlName="au" />
+    </mat-form-field>
+    <button matButton="filled" type="button" (click)="telecharger()">
+      <mat-icon>download</mat-icon>
+      Télécharger
+    </button>
+  </form>
+</mat-card>

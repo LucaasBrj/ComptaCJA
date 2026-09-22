@@ -7,6 +7,31 @@
 
   <span class="barre__espace"></span>
 
+  <div class="recherche">
+    <mat-icon class="recherche__icone">search</mat-icon>
+    <input
+      class="recherche__champ"
+      type="search"
+      placeholder="Client, n°, prestation, commune"
+      [value]="terme()"
+      (input)="surRecherche($any($event.target).value)"
+      aria-label="Recherche globale"
+    />
+    @if (aDesResultats()) {
+      <div class="recherche__panneau">
+        @for (groupe of groupes(); track groupe.titre) {
+          <p class="recherche__titre">{{ groupe.titre }}</p>
+          @for (resultat of groupe.items; track resultat.iri + resultat.libelle) {
+            <button type="button" class="recherche__ligne" (click)="ouvrir(resultat)">
+              <strong>{{ resultat.libelle }}</strong>
+              <span>{{ resultat.sousTitre }}</span>
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+
   <button matButton type="button" [matMenuTriggerFor]="menuCompte">
     <mat-icon>account_circle</mat-icon>
     <span class="barre__utilisateur">{{ libelleUtilisateur() }}</span>
@@ -45,7 +70,7 @@
 
     <mat-divider />
 
-    <p class="tiroir__note">Devis, acomptes, soldes et annexes de débours.</p>
+    <p class="tiroir__note">Recherche, duplication et suivi des pièces.</p>
   </mat-sidenav>
 
   <mat-sidenav-content class="contenu">

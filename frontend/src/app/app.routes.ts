@@ -13,7 +13,13 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./layout/shell/shell').then((m) => m.Shell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'clients' },
+      { path: '', pathMatch: 'full', redirectTo: 'tableau-de-bord' },
+      {
+        path: 'tableau-de-bord',
+        title: 'Tableau de bord - CJA',
+        loadComponent: () =>
+          import('./features/suivi/tableau-de-bord').then((m) => m.TableauDeBordPage),
+      },
       {
         path: 'documents',
         title: 'Documents - CJA',

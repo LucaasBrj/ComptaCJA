@@ -24,6 +24,7 @@ import {
   Document as DocumentHistorique,
   LIBELLES_STATUT_DOCUMENT,
   LIBELLES_TYPE_DOCUMENT,
+  TypeDocument,
   adresseEnUneLigne,
 } from '../../../core/models/client.model';
 import { ChantierDialog, ResultatChantierDialog } from '../chantier-dialog/chantier-dialog';
@@ -66,8 +67,42 @@ export class ClientDetail {
   protected readonly adresseEnUneLigne = adresseEnUneLigne;
   protected readonly identifiant = identifiantDepuisIri;
 
+  protected readonly typesRecap: readonly TypeDocument[] = [
+    'DEVIS',
+    'FACTURE',
+    'FACTURE_ACOMPTE',
+    'ANNEXE_DEBOURS',
+  ];
+
   protected libelleType(document: DocumentHistorique): string {
     return LIBELLES_TYPE_DOCUMENT[document.type];
+  }
+
+  protected libelleTypeCode(type: TypeDocument): string {
+    return LIBELLES_TYPE_DOCUMENT[type];
+  }
+
+  protected nombreParType(documents: readonly DocumentHistorique[], type: TypeDocument): number {
+    return documents.filter((document) => document.type === type).length;
+  }
+
+  protected ttcParType(documents: readonly DocumentHistorique[], type: TypeDocument): number {
+    return documents
+      .filter((document) => document.type === type)
+      .reduce((somme, document) => somme + Number(document.montantTtc), 0);
+  }
+
+  protected enRetard(document: DocumentHistorique): boolean {
+    if (!document.dateEcheance || ['PAYE', 'ANNULE', 'REFUSE', 'BROUILLON'].includes(document.statut)) {
+      return false;
+    }
+
+    const [annee, mois, jour] = document.dateEcheance.slice(0, 10).split('-').map(Number);
+    const echeance = new Date(annee, mois - 1, jour);
+    const aujourdhui = new Date();
+    aujourdhui.setHours(0, 0, 0, 0);
+
+    return echeance < aujourdhui;
   }
 
   protected libelleStatut(document: DocumentHistorique): string {
