@@ -228,6 +228,10 @@ final class DocumentTest extends ApiTestCase
 
         $html = $this->rendre($devis['id']);
         self::assertStringContainsString('Acompte de 30 % à verser à la signature du devis : 69,00 €.', $html);
+        self::assertStringContainsString('Devis à retourner signé', $html);
+        self::assertStringNotContainsString('accompagné du règlement', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
+        self::assertStringContainsString('Signature :', $html);
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
         self::assertResponseStatusCodeSame(422);
@@ -327,6 +331,8 @@ final class DocumentTest extends ApiTestCase
 
         $html = $this->rendre($devis['id']);
         self::assertStringNotContainsString('à verser à la signature', $html);
+        self::assertStringContainsString('Devis à retourner signé', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
 
         $http->request('PATCH', '/api/documents/'.$devis['id'], [
             'headers' => ['Content-Type' => 'application/merge-patch+json'],
@@ -497,6 +503,9 @@ final class DocumentTest extends ApiTestCase
             'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.',
             $html,
         );
+        self::assertStringContainsString('Devis à retourner signé accompagné du règlement', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
+        self::assertStringContainsString('Signature :', $html);
     }
 
     public function testLaRechercheRetrouveLeNomDuClient(): void
