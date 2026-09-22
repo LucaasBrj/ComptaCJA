@@ -20,6 +20,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\QueryParameter;
 use App\Controller\DocumentPdfController;
+use App\Filter\EnRetardFilter;
 use App\Enum\StatutDocument;
 use App\State\PieceLieeProcessor;
 use App\Enum\TauxTva;
@@ -95,6 +96,14 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
             normalizationContext: ['groups' => ['document:read', 'document:item']],
             name: 'document_annexe_debours',
         ),
+        new Post(
+            uriTemplate: '/documents/{id}/dupliquer',
+            read: true,
+            input: false,
+            processor: PieceLieeProcessor::class,
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            name: 'document_dupliquer',
+        ),
     ],
     order: ['dateEmission' => 'DESC', 'numero' => 'DESC'],
 )]
@@ -113,6 +122,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
     'statut' => 'exact',
 ])]
 #[ApiFilter(BooleanFilter::class, properties: ['legacy'])]
+#[ApiFilter(EnRetardFilter::class)]
 #[ApiFilter(DateFilter::class, properties: ['dateEmission'])]
 #[ApiFilter(OrderFilter::class, properties: ['numero', 'dateEmission', 'montantTtc'])]
 class Document

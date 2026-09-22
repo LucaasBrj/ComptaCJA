@@ -9,6 +9,7 @@ export interface CriteresDocuments {
   readonly type?: string;
   readonly statut?: string;
   readonly client?: string;
+  readonly enRetard?: boolean;
   readonly page: number;
   readonly parPage: number;
 }
@@ -46,6 +47,9 @@ export class DocumentApiService {
     if (criteres.client) {
       parametres = parametres.set('client', criteres.client);
     }
+    if (criteres.enRetard) {
+      parametres = parametres.set('enRetard', '1');
+    }
 
     return this.http.get<CollectionHydra<DocumentDetail>>('/api/documents', { params: parametres });
   }
@@ -76,6 +80,10 @@ export class DocumentApiService {
 
   annexeDebours(id: string): Observable<DocumentDetail> {
     return this.http.post<DocumentDetail>(`/api/documents/${id}/annexe-debours`, null);
+  }
+
+  dupliquer(id: string): Observable<DocumentDetail> {
+    return this.http.post<DocumentDetail>(`/api/documents/${id}/dupliquer`, null);
   }
 
   pdf(id: string): Observable<Blob> {

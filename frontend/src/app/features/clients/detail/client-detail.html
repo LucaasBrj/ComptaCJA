@@ -168,6 +168,15 @@
       <mat-tab [label]="'Historique (' + (fiche.documents?.length ?? 0) + ')'">
         <div class="onglet">
           @if (fiche.documents?.length) {
+            <div class="recap">
+              @for (type of typesRecap; track type) {
+                <div class="recap__carte">
+                  <span>{{ libelleTypeCode(type) }}</span>
+                  <strong>{{ nombreParType(fiche.documents ?? [], type) }}</strong>
+                  <span>{{ ttcParType(fiche.documents ?? [], type) | currency: 'EUR' }}</span>
+                </div>
+              }
+            </div>
             <div class="tableau-defilant">
               <table mat-table [dataSource]="fiche.documents ?? []">
                 <ng-container matColumnDef="numero">
@@ -208,6 +217,9 @@
                       <mat-chip [highlighted]="document.statut === 'PAYE'">
                         {{ libelleStatut(document) }}
                       </mat-chip>
+                      @if (enRetard(document)) {
+                        <mat-chip class="retard">En retard</mat-chip>
+                      }
                     </mat-chip-set>
                   </td>
                 </ng-container>

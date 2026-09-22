@@ -1,7 +1,12 @@
 <header class="entete">
   <div>
     <h1 class="entete__titre">Documents</h1>
-    <p class="entete__sous-titre">{{ total() }} pièce(s)</p>
+    <p class="entete__sous-titre">
+      {{ total() }} pièce(s)
+      @if (enRetard) {
+        dont l'échéance est dépassée
+      }
+    </p>
   </div>
 
   <div class="entete__actions">

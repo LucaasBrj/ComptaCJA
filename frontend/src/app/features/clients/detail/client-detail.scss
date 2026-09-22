@@ -31,6 +31,31 @@
   }
 }
 
+.recap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  &__carte {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--mat-sys-surface-container);
+
+    strong {
+      font: var(--mat-sys-title-medium);
+    }
+  }
+}
+
+.retard {
+  --mat-chip-elevated-container-color: var(--mat-sys-error-container);
+  --mat-chip-label-text-color: var(--mat-sys-on-error-container);
+}
+
 .onglet {
   padding: 1.25rem 0.5rem 0.5rem;
 

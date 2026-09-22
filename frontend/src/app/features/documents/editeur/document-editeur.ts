@@ -255,6 +255,10 @@ export class DocumentEditeur implements OnInit {
     this.generer(this.api.annexeDebours(this.id() ?? ''), 'Annexe de débours créée.');
   }
 
+  protected dupliquer(): void {
+    this.generer(this.api.dupliquer(this.id() ?? ''), 'Devis dupliqué.');
+  }
+
   protected libelleTaux(code: string | null): string {
     return TAUX_TVA.find((item) => item.code === code)?.libelle ?? '';
   }
