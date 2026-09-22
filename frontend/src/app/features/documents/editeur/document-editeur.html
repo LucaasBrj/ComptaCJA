@@ -38,6 +38,12 @@
         Facture de solde
       </button>
     }
+    @if (peutEnvoyer()) {
+      <button matButton="outlined" type="button" (click)="ouvrirEnvoi()" [disabled]="enregistrement()">
+        <mat-icon>mail</mat-icon>
+        Envoyer
+      </button>
+    }
     @if (id() && !legacy() && formulaire.controls.type.value === 'DEVIS') {
       <button matButton="outlined" type="button" (click)="dupliquer()" [disabled]="enregistrement()">
         Dupliquer

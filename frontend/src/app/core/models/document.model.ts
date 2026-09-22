@@ -99,6 +99,10 @@ export interface Entreprise extends RessourceApi {
   conditionsReglement: string | null;
   penalitesRetard: string | null;
   indemniteRecouvrement: string;
+  modeleDevisSujet: string;
+  modeleDevisCorps: string;
+  modeleFactureSujet: string;
+  modeleFactureCorps: string;
 }
 
 export interface VentilationTva {

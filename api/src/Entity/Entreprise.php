@@ -49,6 +49,33 @@ class Entreprise
 {
     public const MENTION_FRANCHISE = 'TVA non applicable, art. 293 B du CGI';
 
+    public const MODELE_DEVIS_SUJET = 'Devis {{numero}} - {{entreprise}}';
+
+    public const MODELE_FACTURE_SUJET = 'Facture {{numero}} - {{entreprise}}';
+
+    public const MODELE_DEVIS_CORPS = <<<'TXT'
+Bonjour {{client}},
+
+Veuillez trouver ci-joint le devis {{numero}}.
+Objet : {{objet}}
+Montant TTC : {{montant}}
+
+Cordialement,
+{{entreprise}}
+TXT;
+
+    public const MODELE_FACTURE_CORPS = <<<'TXT'
+Bonjour {{client}},
+
+Veuillez trouver ci-joint la facture {{numero}}.
+Objet : {{objet}}
+Montant TTC : {{montant}}
+Échéance : {{echeance}}
+
+Cordialement,
+{{entreprise}}
+TXT;
+
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[Groups(['entreprise:read'])]
@@ -132,6 +159,26 @@ class Entreprise
     #[Assert\PositiveOrZero]
     #[Groups(['entreprise:read', 'entreprise:write'])]
     private string $indemniteRecouvrement = '40.00';
+
+    #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Le sujet du devis est obligatoire.')]
+    #[Groups(['entreprise:read', 'entreprise:write'])]
+    private string $modeleDevisSujet = self::MODELE_DEVIS_SUJET;
+
+    #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Le message du devis est obligatoire.')]
+    #[Groups(['entreprise:read', 'entreprise:write'])]
+    private string $modeleDevisCorps = self::MODELE_DEVIS_CORPS;
+
+    #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Le sujet de la facture est obligatoire.')]
+    #[Groups(['entreprise:read', 'entreprise:write'])]
+    private string $modeleFactureSujet = self::MODELE_FACTURE_SUJET;
+
+    #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: 'Le message de la facture est obligatoire.')]
+    #[Groups(['entreprise:read', 'entreprise:write'])]
+    private string $modeleFactureCorps = self::MODELE_FACTURE_CORPS;
 
     #[ORM\Column]
     #[Groups(['entreprise:read'])]
@@ -373,6 +420,54 @@ class Entreprise
     public function setIndemniteRecouvrement(string $indemniteRecouvrement): self
     {
         $this->indemniteRecouvrement = $indemniteRecouvrement;
+
+        return $this;
+    }
+
+    public function getModeleDevisSujet(): string
+    {
+        return $this->modeleDevisSujet;
+    }
+
+    public function setModeleDevisSujet(string $modeleDevisSujet): self
+    {
+        $this->modeleDevisSujet = $modeleDevisSujet;
+
+        return $this;
+    }
+
+    public function getModeleDevisCorps(): string
+    {
+        return $this->modeleDevisCorps;
+    }
+
+    public function setModeleDevisCorps(string $modeleDevisCorps): self
+    {
+        $this->modeleDevisCorps = $modeleDevisCorps;
+
+        return $this;
+    }
+
+    public function getModeleFactureSujet(): string
+    {
+        return $this->modeleFactureSujet;
+    }
+
+    public function setModeleFactureSujet(string $modeleFactureSujet): self
+    {
+        $this->modeleFactureSujet = $modeleFactureSujet;
+
+        return $this;
+    }
+
+    public function getModeleFactureCorps(): string
+    {
+        return $this->modeleFactureCorps;
+    }
+
+    public function setModeleFactureCorps(string $modeleFactureCorps): self
+    {
+        $this->modeleFactureCorps = $modeleFactureCorps;
 
         return $this;
     }

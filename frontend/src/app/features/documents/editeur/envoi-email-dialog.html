@@ -1,0 +1,44 @@
+<h2 mat-dialog-title>Envoyer par e-mail</h2>
+
+<mat-dialog-content>
+  @if (donnees.avertissement) {
+    <p class="avertissement">{{ donnees.avertissement }}</p>
+  }
+  <p class="piece">Pièce jointe : {{ donnees.nomFichier }}</p>
+  @if (donnees.annexes.length) {
+    <div class="annexes">
+      @for (annexe of donnees.annexes; track annexe.id; let index = $index) {
+        <mat-checkbox [formControl]="annexesCochees.at(index)">Annexe {{ annexe.numero }}</mat-checkbox>
+      }
+    </div>
+  }
+
+  <form [formGroup]="formulaire" class="champs">
+    <mat-form-field>
+      <mat-label>Destinataire</mat-label>
+      <input matInput type="email" formControlName="destinataire" />
+      @if (formulaire.controls.destinataire.hasError('required')) {
+        <mat-error>Le destinataire est obligatoire.</mat-error>
+      } @else if (formulaire.controls.destinataire.hasError('email')) {
+        <mat-error>Cette adresse n'est pas valide.</mat-error>
+      }
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Sujet</mat-label>
+      <input matInput formControlName="sujet" />
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Message</mat-label>
+      <textarea matInput rows="8" formControlName="corps"></textarea>
+    </mat-form-field>
+  </form>
+
+  @if (erreur(); as message) {
+    <p class="erreur" role="alert">{{ message }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button matButton type="button" (click)="fermer()" [disabled]="envoi()">Annuler</button>
+  <button matButton="filled" type="button" (click)="envoyer()" [disabled]="envoi()">Envoyer</button>
+</mat-dialog-actions>

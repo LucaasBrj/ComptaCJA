@@ -5,6 +5,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatCardModule } from '@angular/material/card';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -27,6 +28,7 @@ import { Chantier, Client, LIBELLES_STATUT_DOCUMENT, TypeDocument } from '../../
 import {
   DocumentDetail,
   LigneDocument,
+  PieceLiee,
   Prestation,
   ResumeClient,
   TAUX_TVA,
@@ -40,6 +42,7 @@ import {
 } from '../../../core/models/document.model';
 import { Fournisseur } from '../../../core/models/fournisseur.model';
 import { NotificationService } from '../../../core/notification.service';
+import { EnvoiEmailDialog } from './envoi-email-dialog';
 
 @Component({
   selector: 'app-document-editeur',
@@ -53,6 +56,7 @@ import { NotificationService } from '../../../core/notification.service';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
+    MatDialogModule,
     MatIconModule,
     MatAutocompleteModule,
     MatDatepickerModule,
@@ -70,6 +74,7 @@ export class DocumentEditeur implements OnInit {
   private readonly fournisseursApi = inject(FournisseurApiService);
   private readonly entrepriseApi = inject(EntrepriseApiService);
   private readonly notifications = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -91,6 +96,11 @@ export class DocumentEditeur implements OnInit {
   protected readonly fournisseurs = signal<readonly Fournisseur[]>([]);
   protected readonly franchise = signal(false);
   protected readonly totaux = signal<TotauxDocument>({ ht: 0, tva: 0, ttc: 0, ventilation: [] });
+  private readonly emailClient = signal<string | null>(null);
+  private readonly nomClient = signal('');
+  private readonly montantTtc = signal('0.00');
+  private readonly raisonSociale = signal('');
+  private readonly piecesLiees = signal<readonly PieceLiee[]>([]);
 
   protected readonly rechercheClient = this.fb.nonNullable.control('');
   private readonly rechercheClient$ = new Subject<string>();
@@ -165,9 +175,62 @@ export class DocumentEditeur implements OnInit {
     }
   }
 
+  protected peutEnvoyer(): boolean {
+    const type = this.formulaire.controls.type.value;
+
+    return (
+      !!this.id() &&
+      !!this.numero() &&
+      !this.legacy() &&
+      (type === 'DEVIS' || type === 'FACTURE' || type === 'FACTURE_ACOMPTE' || type === 'ANNEXE_DEBOURS')
+    );
+  }
+
+  protected ouvrirEnvoi(): void {
+    const identifiant = this.id();
+    const numero = this.numero();
+    if (!identifiant || !numero) {
+      return;
+    }
+
+    this.entrepriseApi.lire().subscribe({
+      next: (entreprise) => {
+        this.raisonSociale.set(entreprise.raisonSociale);
+        const type = this.formulaire.controls.type.value;
+        const facture = type !== 'DEVIS';
+        const reference = this.dialog.open(EnvoiEmailDialog, {
+          data: {
+            id: identifiant,
+            destinataire: this.emailClient() ?? '',
+            sujet: this.remplir(facture ? entreprise.modeleFactureSujet : entreprise.modeleDevisSujet),
+            corps: this.remplir(facture ? entreprise.modeleFactureCorps : entreprise.modeleDevisCorps),
+            nomFichier: `${numero}.pdf`,
+            avertissement: this.avertissementEnvoi(),
+            annexes:
+              type === 'ANNEXE_DEBOURS'
+                ? []
+                : this.piecesLiees()
+                    .filter((piece) => piece.type === 'ANNEXE_DEBOURS' && piece.numero)
+                    .map((piece) => ({ id: piece.id, numero: piece.numero ?? '' })),
+          },
+          width: '36rem',
+        });
+        reference.afterClosed().subscribe((envoye) => {
+          if (envoye) {
+            this.notifications.succes('Message envoyé.');
+            this.charger(identifiant);
+          }
+        });
+      },
+      error: (erreur: HttpErrorResponse) => this.notifications.erreur(messageErreur(erreur)),
+    });
+  }
+
   protected choisirClient(client: Client): void {
     this.formulaire.controls.client.setValue(client['@id'] ?? `/api/clients/${client.id}`);
     this.rechercheClient.setValue(client.nomAffichage ?? '', { emitEvent: false });
+    this.nomClient.set(client.nomAffichage ?? '');
+    this.emailClient.set(client.email);
     this.chantiers.set(client.chantiers ?? []);
     this.formulaire.controls.chantier.setValue(null);
     if (!client.chantiers) {
@@ -359,6 +422,10 @@ export class DocumentEditeur implements OnInit {
     this.legacy.set(document.legacy);
     this.lectureSeule.set(document.verrouille || document.legacy);
     const client = document.client as ResumeClient;
+    this.nomClient.set(client.nomAffichage ?? '');
+    this.montantTtc.set(document.montantTtc);
+    this.emailClient.set(null);
+    this.piecesLiees.set(document.piecesLieesResume ?? []);
     this.rechercheClient.setValue(client.nomAffichage ?? '', { emitEvent: false });
     this.formulaire.patchValue({
       type: document.type as TypeDocument,
@@ -381,6 +448,8 @@ export class DocumentEditeur implements OnInit {
     if (client['@id'] || client.id) {
       this.clientsApi.recuperer(identifiantDepuisIri(client)).subscribe((fiche) => {
         this.chantiers.set(fiche.chantiers ?? []);
+        this.nomClient.set(fiche.nomAffichage ?? '');
+        this.emailClient.set(fiche.email);
       });
     }
     if (this.lectureSeule()) {
@@ -476,6 +545,42 @@ export class DocumentEditeur implements OnInit {
     }
 
     return typeof fournisseur === 'string' ? fournisseur : (fournisseur['@id'] ?? null);
+  }
+
+  private avertissementEnvoi(): string | null {
+    if (this.statut() !== 'BROUILLON') {
+      return null;
+    }
+
+    const phrase = (article: string, nom: string, accorde: string): string =>
+      `Une fois envoyé${accorde}, ${article} ${nom} ne sera plus modifiable.`;
+
+    switch (this.formulaire.controls.type.value) {
+      case 'FACTURE':
+        return phrase('la', 'facture', 'e');
+      case 'FACTURE_ACOMPTE':
+        return phrase("la", "facture d'acompte", 'e');
+      case 'ANNEXE_DEBOURS':
+        return "Une fois envoyée, l'annexe ne sera plus modifiable.";
+      default:
+        return phrase('le', 'devis', '');
+    }
+  }
+
+  private remplir(modele: string): string {
+    const echeance = this.formulaire.getRawValue().dateEcheance;
+    const valeurs: Record<string, string> = {
+      client: this.nomClient(),
+      numero: this.numero() ?? '',
+      objet: this.formulaire.getRawValue().objet ?? '',
+      montant: new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(
+        Number(this.montantTtc()),
+      ),
+      echeance: echeance ? new Intl.DateTimeFormat('fr-FR').format(echeance) : '',
+      entreprise: this.raisonSociale(),
+    };
+
+    return modele.replace(/\{\{(\w+)\}\}/g, (_jeton, cle: string) => valeurs[cle] ?? '');
   }
 
   private decimal(valeur: unknown): string | null {

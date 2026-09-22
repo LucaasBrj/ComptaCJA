@@ -29,6 +29,14 @@ services:
     ports:
       - "3000:3000"
 
+  # Boite locale : les e-mails de l'application s'affichent sur http://127.0.0.1:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: cja_mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   adminer:
     image: adminer:latest
     container_name: cja_adminer

@@ -60,6 +60,10 @@ export class ReglagesEntreprise {
     conditionsReglement: this.fb.control<string | null>(null),
     penalitesRetard: this.fb.control<string | null>(null),
     indemniteRecouvrement: this.fb.nonNullable.control('40.00'),
+    modeleDevisSujet: this.fb.nonNullable.control('', Validators.required),
+    modeleDevisCorps: this.fb.nonNullable.control('', Validators.required),
+    modeleFactureSujet: this.fb.nonNullable.control('', Validators.required),
+    modeleFactureCorps: this.fb.nonNullable.control('', Validators.required),
   });
 
   constructor() {

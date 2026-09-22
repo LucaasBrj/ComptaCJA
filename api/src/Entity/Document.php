@@ -20,6 +20,7 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\QueryParameter;
 use App\Controller\DocumentPdfController;
+use App\Controller\EnvoyerEmailController;
 use App\Filter\EnRetardFilter;
 use App\Enum\StatutDocument;
 use App\State\PieceLieeProcessor;
@@ -103,6 +104,16 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
             processor: PieceLieeProcessor::class,
             normalizationContext: ['groups' => ['document:read', 'document:item']],
             name: 'document_dupliquer',
+        ),
+        new Post(
+            uriTemplate: '/documents/{id}/envoyer-email',
+            controller: EnvoyerEmailController::class,
+            read: true,
+            deserialize: false,
+            input: false,
+            output: false,
+            status: 204,
+            name: 'document_envoyer_email',
         ),
     ],
     order: ['dateEmission' => 'DESC', 'numero' => 'DESC'],
