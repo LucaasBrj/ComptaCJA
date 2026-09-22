@@ -63,7 +63,7 @@
     }
     @if (id() && !legacy() && (formulaire.controls.type.value === 'DEVIS' || formulaire.controls.type.value === 'FACTURE')) {
       <button matButton="outlined" type="button" (click)="creerAnnexe()" [disabled]="enregistrement()">
-        Annexe de débours
+        Générer une annexe de débours
       </button>
     }
     @if (!lectureSeule()) {
@@ -79,6 +79,21 @@
 
 @if (enregistrement()) {
   <mat-progress-bar mode="indeterminate" />
+}
+
+@if (annexesDebours().length) {
+  <mat-card class="bloc annexes">
+    <h2>Annexes de débours</h2>
+    <ul>
+      @for (annexe of annexesDebours(); track annexe.id) {
+        <li>
+          <a [routerLink]="['/documents', annexe.id]">{{ annexe.numero || 'Sans numéro' }}</a>
+          <span>{{ libelleStatut(annexe.statut) }}</span>
+          <span class="mono">{{ +annexe.montantTtc | currency: 'EUR' }}</span>
+        </li>
+      }
+    </ul>
+  </mat-card>
 }
 
 <form class="editeur" [formGroup]="formulaire">
