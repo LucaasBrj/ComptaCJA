@@ -322,6 +322,14 @@ export class DocumentEditeur implements OnInit {
     });
   }
 
+  protected pieceLiee(type: 'FACTURE_ACOMPTE' | 'FACTURE'): PieceLiee | undefined {
+    return this.piecesLiees().find((piece) => piece.type === type && piece.statut !== 'ANNULE');
+  }
+
+  protected ouvrirPiece(piece: PieceLiee): void {
+    void this.router.navigate(['/documents', piece.id]);
+  }
+
   protected creerAcompte(): void {
     this.generer(this.api.factureAcompte(this.id() ?? ''), 'Facture d\'acompte créée.');
   }

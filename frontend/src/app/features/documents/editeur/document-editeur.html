@@ -31,12 +31,24 @@
       </button>
     }
     @if (lectureSeule() && formulaire.controls.type.value === 'DEVIS' && statut() === 'ACCEPTE') {
-      <button matButton="outlined" type="button" (click)="creerAcompte()" [disabled]="enregistrement()">
-        Facture d'acompte
-      </button>
-      <button matButton="filled" type="button" (click)="creerSolde()" [disabled]="enregistrement()">
-        Facture de solde
-      </button>
+      @if (pieceLiee('FACTURE_ACOMPTE'); as acompte) {
+        <button matButton="outlined" type="button" (click)="ouvrirPiece(acompte)">
+          Voir facture d'acompte
+        </button>
+      } @else {
+        <button matButton="outlined" type="button" (click)="creerAcompte()" [disabled]="enregistrement()">
+          Générer une facture d'acompte
+        </button>
+      }
+      @if (pieceLiee('FACTURE'); as solde) {
+        <button matButton="filled" type="button" (click)="ouvrirPiece(solde)">
+          Voir facture de solde
+        </button>
+      } @else {
+        <button matButton="filled" type="button" (click)="creerSolde()" [disabled]="enregistrement()">
+          Générer une facture de solde
+        </button>
+      }
     }
     @if (peutEnvoyer()) {
       <button matButton="outlined" type="button" (click)="ouvrirEnvoi()" [disabled]="enregistrement()">
