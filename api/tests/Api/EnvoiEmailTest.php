@@ -108,8 +108,7 @@ final class EnvoiEmailTest extends ApiTestCase
         $this->renseignerExpediteur($http);
 
         $devis = $this->creerDevis($http, $client);
-        $annexe = $http->request('POST', '/api/documents/'.$devis['id'].'/annexe-debours')->toArray();
-        self::assertResponseStatusCodeSame(201);
+        $annexe = $this->creerAnnexe($http, $client, $devis);
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/envoyer-email', [
             'headers' => ['Content-Type' => 'application/json'],
@@ -137,8 +136,7 @@ final class EnvoiEmailTest extends ApiTestCase
         self::assertTrue($annexeRelue['verrouille']);
 
         $autre = $this->creerDevis($http, $client);
-        $annexeAutre = $http->request('POST', '/api/documents/'.$autre['id'].'/annexe-debours')->toArray();
-        self::assertResponseStatusCodeSame(201);
+        $annexeAutre = $this->creerAnnexe($http, $client, $autre);
 
         $http->request('POST', '/api/documents/'.$autre['id'].'/envoyer-email', [
             'headers' => ['Content-Type' => 'application/json'],
@@ -233,5 +231,26 @@ final class EnvoiEmailTest extends ApiTestCase
         self::assertResponseStatusCodeSame(201);
 
         return $devis;
+    }
+
+    /**
+     * @param array<string, mixed> $source
+     *
+     * @return array<string, mixed>
+     */
+    private function creerAnnexe(mixed $http, string $client, array $source): array
+    {
+        $annexe = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+                'documentSource' => $source['@id'],
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+
+        return $annexe;
     }
 }

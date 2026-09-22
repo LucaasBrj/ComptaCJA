@@ -17,8 +17,8 @@ use Symfony\Component\Validator\ConstraintViolationList;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
- * Cree une facture d'acompte, une facture de solde ou une annexe de debours
- * a partir d'une piece existante. La saisie libre de ces types reste refusee.
+ * Cree une facture d'acompte, une facture de solde ou la copie d'un devis.
+ * L'annexe de debours se saisit comme un devis, puis s'enregistre.
  */
 final class GenerateurPiecesLiees
 {
@@ -116,26 +116,6 @@ final class GenerateurPiecesLiees
         }
 
         return $this->persister($copie);
-    }
-
-    public function annexeDebours(Document $source): Document
-    {
-        if ($source->isLegacy()) {
-            $this->rejeter('Une piece reprise de l\'ancien outil ne peut pas recevoir d\'annexe.', 'legacy');
-        }
-
-        if (!\in_array($source->getType(), [TypeDocument::DEVIS, TypeDocument::FACTURE], true)) {
-            $this->rejeter('L\'annexe de debours se rattache a un devis ou a une facture.', 'type');
-        }
-
-        $nature = TypeDocument::DEVIS === $source->getType() ? 'devis' : 'facture';
-        $piece = $this->coquille(
-            $source,
-            TypeDocument::ANNEXE_DEBOURS,
-            sprintf('Annexe au %s %s', $nature, $source->getNumero()),
-        );
-
-        return $this->persister($piece);
     }
 
     private function exigerDevisAccepte(Document $devis): void

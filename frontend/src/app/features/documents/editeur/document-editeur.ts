@@ -101,6 +101,7 @@ export class DocumentEditeur implements OnInit {
   private readonly montantTtc = signal('0.00');
   private readonly raisonSociale = signal('');
   private readonly piecesLiees = signal<readonly PieceLiee[]>([]);
+  private sourceAnnexe: string | null = null;
 
   protected readonly rechercheClient = this.fb.nonNullable.control('');
   private readonly rechercheClient$ = new Subject<string>();
@@ -150,6 +151,10 @@ export class DocumentEditeur implements OnInit {
     }
 
     const type = this.route.snapshot.queryParamMap.get('type');
+    if (type === 'ANNEXE_DEBOURS') {
+      this.ouvrirBrouillonAnnexe();
+      return;
+    }
     if (type === 'FACTURE' || type === 'DEVIS') {
       this.formulaire.controls.type.setValue(type);
     }
@@ -158,6 +163,17 @@ export class DocumentEditeur implements OnInit {
       this.selectionnerClientParId(client);
     }
     this.ajouterLigne('PRESTATION');
+  }
+
+  protected titreEntete(): string {
+    switch (this.formulaire.controls.type.value) {
+      case 'FACTURE':
+        return 'Nouvelle facture';
+      case 'ANNEXE_DEBOURS':
+        return 'Nouvelle annexe de débours';
+      default:
+        return 'Nouveau devis';
+    }
   }
 
   protected get lignes(): FormArray<FormGroup> {
@@ -315,7 +331,14 @@ export class DocumentEditeur implements OnInit {
   }
 
   protected creerAnnexe(): void {
-    this.generer(this.api.annexeDebours(this.id() ?? ''), 'Annexe de débours créée.');
+    const identifiant = this.id();
+    if (!identifiant) {
+      return;
+    }
+
+    void this.router.navigate(['/documents/nouveau'], {
+      queryParams: { type: 'ANNEXE_DEBOURS', source: identifiant },
+    });
   }
 
   protected dupliquer(): void {
@@ -482,6 +505,52 @@ export class DocumentEditeur implements OnInit {
     });
   }
 
+  private ouvrirBrouillonAnnexe(): void {
+    this.formulaire.controls.type.setValue('ANNEXE_DEBOURS');
+    this.formulaire.controls.type.disable({ emitEvent: false });
+    const source = this.route.snapshot.queryParamMap.get('source');
+    if (source) {
+      this.chargement.set(true);
+      this.api.lire(source).subscribe({
+        next: (document) => {
+          this.chargement.set(false);
+          this.reprendreSource(document);
+        },
+        error: () => this.chargement.set(false),
+      });
+    }
+    this.ajouterLigne('DEBOURS');
+  }
+
+  private reprendreSource(document: DocumentDetail): void {
+    this.sourceAnnexe = document['@id'] ?? `/api/documents/${identifiantDepuisIri(document)}`;
+    const nature = document.type === 'FACTURE' ? 'facture' : 'devis';
+    this.formulaire.controls.objet.setValue(`Annexe au ${nature} ${document.numero ?? ''}`.trim());
+    const chantier = this.iriChantier(document);
+    const client = document.client;
+    const clientId = typeof client === 'string' ? identifiantDepuisIri(client) : identifiantDepuisIri(client);
+    if (!clientId) {
+      return;
+    }
+
+    this.clientsApi.recuperer(clientId).subscribe((fiche) => {
+      this.choisirClient(fiche);
+      this.formulaire.controls.chantier.setValue(chantier);
+    });
+  }
+
+  private iriChantier(document: DocumentDetail): string | null {
+    if (!document.chantier) {
+      return null;
+    }
+
+    if (typeof document.chantier === 'string') {
+      return document.chantier;
+    }
+
+    return document.chantier['@id'] ?? null;
+  }
+
   private payload(envoyer: boolean): PayloadDocument {
     const valeurs = this.formulaire.getRawValue();
 
@@ -494,6 +563,7 @@ export class DocumentEditeur implements OnInit {
       tauxAcompte: this.decimal(valeurs.tauxAcompte) ?? '30.00',
       client: valeurs.client ?? '',
       chantier: valeurs.chantier,
+      ...(this.sourceAnnexe && !this.id() ? { documentSource: this.sourceAnnexe } : {}),
       lignes: valeurs.lignes.map((ligne) => ({
         type: ligne['type'] as TypeLigne,
         libelle: (ligne['libelle'] as string) ?? '',

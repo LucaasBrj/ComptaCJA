@@ -29,7 +29,6 @@ final class PieceLieeProcessor implements ProcessorInterface
         return match ($operation->getName()) {
             'document_facture_acompte' => $this->generateur->factureAcompte($data),
             'document_facture_solde' => $this->generateur->factureSolde($data),
-            'document_annexe_debours' => $this->generateur->annexeDebours($data),
             'document_dupliquer' => $this->generateur->dupliquer($data),
             default => throw new \LogicException(sprintf('Operation inconnue : %s.', $operation->getName() ?? '')),
         };

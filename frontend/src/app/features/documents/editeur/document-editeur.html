@@ -8,7 +8,7 @@
   </a>
   <div>
     <h1 class="entete__titre">
-      {{ numero() ?? (formulaire.controls.type.value === 'FACTURE' ? 'Nouvelle facture' : 'Nouveau devis') }}
+      {{ numero() ?? titreEntete() }}
     </h1>
     <p class="entete__sous-titre">{{ libelleStatut(statut()) }}</p>
   </div>
