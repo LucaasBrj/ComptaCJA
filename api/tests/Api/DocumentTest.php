@@ -281,24 +281,116 @@ final class DocumentTest extends ApiTestCase
         self::assertResponseStatusCodeSame(422);
     }
 
+    public function testLAnnexeExigeUneSourceValideEtFigee(): void
+    {
+        $http = $this->clientAuthentifie();
+        $client = $this->creerClient($http);
+        $devis = $this->creerPiece($http, $client, 'DEVIS', '2026-09-15');
+
+        $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+            ],
+        ]);
+        self::assertResponseStatusCodeSame(422);
+
+        $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'FACTURE_ACOMPTE',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+                'documentSource' => $devis['@id'],
+                'lignes' => [[
+                    'type' => 'PRESTATION',
+                    'libelle' => 'Acompte',
+                    'unite' => 'FORFAIT',
+                    'quantite' => '1',
+                    'prixUnitaireHt' => '30.00',
+                    'tauxTva' => '2',
+                ]],
+            ],
+        ]);
+        self::assertResponseStatusCodeSame(422);
+
+        $annexe = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+                'documentSource' => $devis['@id'],
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+
+        $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+                'documentSource' => $annexe['@id'],
+            ],
+        ]);
+        self::assertResponseStatusCodeSame(422);
+
+        $autre = $this->creerPiece($http, $client, 'FACTURE', '2026-09-16');
+        $http->request('PATCH', '/api/documents/'.$annexe['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['documentSource' => $autre['@id']],
+        ]);
+        self::assertResponseStatusCodeSame(422);
+
+        $fiche = $this->entityManager->find(
+            \App\Entity\Client::class,
+            Uuid::fromString(basename($client)),
+        );
+        $legacy = (new Document())
+            ->setNumero('FC2020-01-009')
+            ->setType(TypeDocument::FACTURE)
+            ->setStatut(StatutDocument::PAYE)
+            ->setDateEmission(new \DateTimeImmutable('2020-01-10'))
+            ->setClient($fiche)
+            ->setLegacy(true)
+            ->setVerrouille(true);
+        $this->entityManager->persist($legacy);
+        $this->entityManager->flush();
+
+        $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'client' => $client,
+                'documentSource' => '/api/documents/'.$legacy->getId(),
+            ],
+        ]);
+        self::assertResponseStatusCodeSame(422);
+    }
+
     public function testLAnnexeDeDeboursPorteLaMentionLegale(): void
     {
         $http = $this->clientAuthentifie();
-        $devis = $this->creerPiece($http, $this->creerClient($http), 'DEVIS', '2026-09-15');
         $fournisseur = $http->request('POST', '/api/fournisseurs', [
             'headers' => ['Content-Type' => 'application/ld+json'],
             'json' => ['nom' => 'BigMat'],
         ])->toArray();
         self::assertResponseStatusCodeSame(201);
 
-        $annexe = $http->request('POST', '/api/documents/'.$devis['id'].'/annexe-debours')->toArray();
-        self::assertResponseStatusCodeSame(201);
-        self::assertSame('ANNEXE_DEBOURS', $annexe['type']);
-        self::assertMatchesRegularExpression('/^AD\d{4}-\d{2}-\d{3}$/', $annexe['numero']);
-
-        $http->request('PATCH', '/api/documents/'.$annexe['id'], [
-            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+        $client = $this->creerClient($http);
+        $devis = $this->creerPiece($http, $client, 'DEVIS', '2026-09-15');
+        $annexe = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
             'json' => [
+                'type' => 'ANNEXE_DEBOURS',
+                'dateEmission' => '2026-09-15',
+                'objet' => 'Annexe au devis '.$devis['numero'],
+                'client' => $client,
+                'documentSource' => $devis['@id'],
                 'lignes' => [[
                     'type' => 'DEBOURS',
                     'libelle' => 'Carrelage',
@@ -309,8 +401,10 @@ final class DocumentTest extends ApiTestCase
                     'fournisseur' => $fournisseur['@id'],
                 ]],
             ],
-        ]);
-        self::assertResponseIsSuccessful();
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('ANNEXE_DEBOURS', $annexe['type']);
+        self::assertMatchesRegularExpression('/^AD\d{4}-\d{2}-\d{3}$/', $annexe['numero']);
 
         $html = $this->rendre($annexe['id']);
         self::assertStringContainsString('Annexe au devis '.$devis['numero'], $html);

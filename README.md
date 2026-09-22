@@ -104,7 +104,7 @@ facture `FC2026-02-001`, la prochaine facture émise par l'application sera `FC2
 - **Facture de solde** : reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`.
 - **Annexe de débours** : rattachée à un devis ou à une facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis.
 
-Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Facture d'acompte**. Après envoi de cet acompte, **Facture de solde**. **Annexe de débours** se crée depuis le devis ou la facture, puis se complète avec les fournisseurs.
+Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Facture d'acompte**. Après envoi de cet acompte, **Facture de solde**. **Annexe de débours** ouvre un brouillon prérempli depuis le devis ou la facture. La pièce n'existe qu'après **Enregistrer** ou **Marquer comme envoyé**.
 
 ## Ce que couvre le Lot 4
 

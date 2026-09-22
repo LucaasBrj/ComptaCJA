@@ -11,6 +11,7 @@ use App\Entity\Chantier;
 use App\Entity\Client;
 use App\Entity\Document;
 use App\Enum\StatutDocument;
+use App\Enum\TypeDocument;
 use App\Service\CalculateurDocument;
 use App\Service\NumberGenerator;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,7 +44,15 @@ final class DocumentProcessor implements ProcessorInterface
         $original = $this->entityManager->getUnitOfWork()->getOriginalEntityData($data);
         $estNouveau = [] === $original;
 
+        if ($estNouveau && TypeDocument::FACTURE_ACOMPTE === $data->getType()) {
+            $this->rejeter('Une facture d\'acompte se genere depuis un devis accepte.', 'type');
+        }
+
         if (!$estNouveau) {
+            if ($this->identifiant($data->getDocumentSource()) !== $this->identifiant($original['documentSource'] ?? null)) {
+                $this->rejeter('La piece d\'origine ne peut plus changer.', 'documentSource');
+            }
+
             $this->empecherChangementDeType($data, $original);
             $this->refuserEcritureFigee($data, $original);
         }
@@ -169,7 +178,7 @@ final class DocumentProcessor implements ProcessorInterface
 
     private function identifiant(mixed $entite): ?string
     {
-        if ($entite instanceof Client || $entite instanceof Chantier) {
+        if ($entite instanceof Client || $entite instanceof Chantier || $entite instanceof Document) {
             return (string) $entite->getId();
         }
 

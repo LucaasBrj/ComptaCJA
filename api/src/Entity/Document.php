@@ -90,14 +90,6 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
             name: 'document_facture_solde',
         ),
         new Post(
-            uriTemplate: '/documents/{id}/annexe-debours',
-            read: true,
-            input: false,
-            processor: PieceLieeProcessor::class,
-            normalizationContext: ['groups' => ['document:read', 'document:item']],
-            name: 'document_annexe_debours',
-        ),
-        new Post(
             uriTemplate: '/documents/{id}/dupliquer',
             read: true,
             input: false,
@@ -213,8 +205,8 @@ class Document
 
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'piecesLiees')]
     #[ORM\JoinColumn(nullable: true)]
-    #[Groups(['document:item'])]
-    #[ApiProperty(writable: false, readableLink: false)]
+    #[Groups(['document:item', 'document:write'])]
+    #[ApiProperty(readableLink: false)]
     private ?Document $documentSource = null;
 
     /**
@@ -261,11 +253,23 @@ class Document
     #[Assert\Callback]
     public function validerCoherence(ExecutionContextInterface $contexte): void
     {
-        $saisieLibre = \in_array($this->type, [TypeDocument::DEVIS, TypeDocument::FACTURE], true);
-        if (!$this->legacy && null !== $this->type && !$saisieLibre && null === $this->documentSource) {
-            $contexte->buildViolation('Les factures d\'acompte et les annexes de debours se generent depuis un devis ou une facture.')
+        if (!$this->legacy && TypeDocument::FACTURE_ACOMPTE === $this->type && null === $this->documentSource) {
+            $contexte->buildViolation('Une facture d\'acompte se genere depuis un devis accepte.')
                 ->atPath('type')
                 ->addViolation();
+        }
+
+        if (TypeDocument::ANNEXE_DEBOURS === $this->type && !$this->legacy) {
+            $source = $this->documentSource;
+            if (
+                null === $source
+                || $source->isLegacy()
+                || !\in_array($source->getType(), [TypeDocument::DEVIS, TypeDocument::FACTURE], true)
+            ) {
+                $contexte->buildViolation('L\'annexe de debours se rattache a un devis ou a une facture.')
+                    ->atPath('documentSource')
+                    ->addViolation();
+            }
         }
 
         if (TypeDocument::DEVIS === $this->type

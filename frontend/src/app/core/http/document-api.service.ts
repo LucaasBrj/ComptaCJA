@@ -25,6 +25,7 @@ export interface PayloadDocument {
   client: string;
   chantier: string | null;
   tauxAcompte?: string;
+  documentSource?: string;
   lignes: LigneDocument[];
 }
 
@@ -81,10 +82,6 @@ export class DocumentApiService {
 
   factureSolde(id: string): Observable<DocumentDetail> {
     return this.http.post<DocumentDetail>(`/api/documents/${id}/facture-solde`, null);
-  }
-
-  annexeDebours(id: string): Observable<DocumentDetail> {
-    return this.http.post<DocumentDetail>(`/api/documents/${id}/annexe-debours`, null);
   }
 
   dupliquer(id: string): Observable<DocumentDetail> {
