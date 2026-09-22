@@ -59,6 +59,7 @@ Bonjour {{client}},
 Veuillez trouver ci-joint le devis {{numero}}.
 Objet : {{objet}}
 Montant TTC : {{montant}}
+{{debours}}
 
 Cordialement,
 {{entreprise}}

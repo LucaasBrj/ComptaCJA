@@ -13,17 +13,47 @@ use App\Entity\Entreprise;
  */
 final class RemplissageMessage
 {
-    public function remplir(string $modele, Document $document, Entreprise $entreprise): string
+    /**
+     * @param list<Document> $annexes Annexes de débours réellement jointes au message.
+     */
+    public function remplir(string $modele, Document $document, Entreprise $entreprise, array $annexes = []): string
     {
         $echeance = $document->getDateEcheance();
-
-        return strtr($modele, [
+        $texte = strtr($modele, [
             '{{client}}' => $document->getClient()?->getNomAffichage() ?? '',
             '{{numero}}' => $document->getNumero() ?? '',
             '{{objet}}' => $document->getObjet() ?? '',
-            '{{montant}}' => number_format((float) $document->getMontantTtc(), 2, ',', ' ').' €',
+            '{{montant}}' => $this->montant($document->getMontantTtc()),
             '{{echeance}}' => null !== $echeance ? $echeance->format('d/m/Y') : '',
             '{{entreprise}}' => $entreprise->getRaisonSociale(),
+            '{{debours}}' => $this->texteDebours($annexes),
         ]);
+
+        return preg_replace("/\n{3,}/", "\n\n", $texte) ?? $texte;
+    }
+
+    /**
+     * @param list<Document> $annexes
+     */
+    private function texteDebours(array $annexes): string
+    {
+        if ([] === $annexes) {
+            return '';
+        }
+
+        $lignes = [];
+        foreach ($annexes as $annexe) {
+            $lignes[] = ($annexe->getNumero() ?? '').' : '.$this->montant($annexe->getMontantTtc());
+        }
+
+        $titre = 1 === \count($annexes) ? 'Annexe de débours jointe :' : 'Annexes de débours jointes :';
+
+        return $titre."\n".implode("\n", $lignes)."\n"
+            .'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.';
+    }
+
+    private function montant(string $montant): string
+    {
+        return number_format((float) $montant, 2, ',', ' ').' €';
     }
 }
