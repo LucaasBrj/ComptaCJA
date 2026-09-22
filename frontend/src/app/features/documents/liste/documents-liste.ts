@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -32,6 +33,7 @@ import { DocumentDetail, ResumeClient } from '../../../core/models/document.mode
     RouterLink,
     MatCardModule,
     MatTableModule,
+    MatSortModule,
     MatPaginatorModule,
     MatFormFieldModule,
     MatInputModule,
@@ -67,6 +69,8 @@ export class DocumentsListe {
   protected enRetard = false;
   protected page = 0;
   protected parPage = 30;
+  private triChamp = '';
+  private triSens: 'asc' | 'desc' = 'asc';
 
   private readonly rechercheSaisie = new Subject<string>();
 
@@ -92,6 +96,17 @@ export class DocumentsListe {
   }
 
   protected filtrer(): void {
+    this.page = 0;
+    this.charger();
+  }
+
+  protected surTri(tri: Sort): void {
+    if (tri.direction === '') {
+      return;
+    }
+
+    this.triChamp = tri.active;
+    this.triSens = tri.direction;
     this.page = 0;
     this.charger();
   }
@@ -130,6 +145,8 @@ export class DocumentsListe {
         enRetard: this.enRetard,
         page: this.page,
         parPage: this.parPage,
+        triChamp: this.triChamp || undefined,
+        triSens: this.triChamp ? this.triSens : undefined,
       })
       .subscribe({
         next: (page) => {

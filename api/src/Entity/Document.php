@@ -121,8 +121,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[QueryParameter(
     key: 'recherche',
     filter: new FreeTextQueryFilter(new OrFilter(new PartialSearchFilter())),
-    properties: ['numero', 'objet'],
-    description: 'Recherche partielle simultanee sur le numero et l\'objet.',
+    properties: ['numero', 'objet', 'client.nom', 'client.prenom', 'client.raisonSociale'],
+    description: 'Recherche partielle simultanee sur le numero, l\'objet et le nom du client.',
 )]
 #[ApiFilter(SearchFilter::class, properties: [
     'numero' => 'partial',
@@ -135,7 +135,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[ApiFilter(BooleanFilter::class, properties: ['legacy'])]
 #[ApiFilter(EnRetardFilter::class)]
 #[ApiFilter(DateFilter::class, properties: ['dateEmission'])]
-#[ApiFilter(OrderFilter::class, properties: ['numero', 'dateEmission', 'montantTtc'])]
+#[ApiFilter(OrderFilter::class, properties: ['numero', 'type', 'dateEmission', 'montantTtc', 'statut', 'client.nom'])]
 class Document
 {
     #[ORM\Id]

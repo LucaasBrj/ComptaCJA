@@ -76,7 +76,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     'typologie' => 'exact',
 ])]
 #[ApiFilter(BooleanFilter::class, properties: ['actif'])]
-#[ApiFilter(OrderFilter::class, properties: ['numeroClient', 'nom', 'raisonSociale', 'createdAt'])]
+#[ApiFilter(OrderFilter::class, properties: ['numeroClient', 'nom', 'raisonSociale', 'typologie', 'telephone', 'adresseFacturation.ville', 'createdAt'])]
 class Client
 {
     #[ORM\Id]

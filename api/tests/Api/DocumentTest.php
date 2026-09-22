@@ -321,6 +321,40 @@ final class DocumentTest extends ApiTestCase
         );
     }
 
+    public function testLaRechercheRetrouveLeNomDuClient(): void
+    {
+        $http = $this->clientAuthentifie();
+        $particulier = $http->request('POST', '/api/clients', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => ['typologie' => 'PARTICULIER', 'nom' => 'Martin', 'prenom' => 'Lea'],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+        $professionnel = $http->request('POST', '/api/clients', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'typologie' => 'PROFESSIONNEL',
+                'raisonSociale' => 'Dupont BTP',
+                'siret' => '73282932000074',
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+
+        $devisMartin = $this->creerPiece($http, $particulier['@id'], 'DEVIS', '2026-09-15');
+        $factureDupont = $this->creerPiece($http, $professionnel['@id'], 'FACTURE', '2026-09-16');
+
+        $parNom = $http->request('GET', '/api/documents?recherche=martin')->toArray();
+        self::assertResponseIsSuccessful();
+        self::assertSame([$devisMartin['numero']], array_column($parNom['member'], 'numero'));
+
+        $parPrenom = $http->request('GET', '/api/documents?recherche=lea')->toArray();
+        self::assertResponseIsSuccessful();
+        self::assertContains($devisMartin['numero'], array_column($parPrenom['member'], 'numero'));
+
+        $parRaison = $http->request('GET', '/api/documents?recherche=Dupont')->toArray();
+        self::assertResponseIsSuccessful();
+        self::assertSame([$factureDupont['numero']], array_column($parRaison['member'], 'numero'));
+    }
+
     public function testLePdfEstRenvoyeParLeControleur(): void
     {
         $http = $this->clientAuthentifie();

@@ -67,7 +67,7 @@
       </ng-container>
 
       <ng-container matColumnDef="typologie">
-        <th mat-header-cell *matHeaderCellDef>Typologie</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="typologie">Typologie</th>
         <td mat-cell *matCellDef="let client">
           <mat-chip-set>
             <mat-chip [highlighted]="client.typologie === 'PROFESSIONNEL'">
@@ -78,7 +78,7 @@
       </ng-container>
 
       <ng-container matColumnDef="contact">
-        <th mat-header-cell *matHeaderCellDef>Contact</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="telephone">Contact</th>
         <td mat-cell *matCellDef="let client">
           <div class="contact">
             @if (client.telephone) {
@@ -95,7 +95,7 @@
       </ng-container>
 
       <ng-container matColumnDef="commune">
-        <th mat-header-cell *matHeaderCellDef>Commune</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="adresseFacturation.ville">Commune</th>
         <td mat-cell *matCellDef="let client">
           {{ client.adresseFacturation?.ville || '—' }}
         </td>
