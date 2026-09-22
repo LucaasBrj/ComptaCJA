@@ -292,6 +292,12 @@ export class DocumentEditeur implements OnInit {
     }
   }
 
+  protected aAcompte(): boolean {
+    const nombre = Number(this.formulaire.controls.tauxAcompte.value.replace(',', '.'));
+
+    return Number.isFinite(nombre) && nombre > 0;
+  }
+
   protected apercuAcompte(): number {
     return montantAcompte(this.totaux().ventilation, this.formulaire.controls.tauxAcompte.value);
   }
@@ -577,7 +583,7 @@ export class DocumentEditeur implements OnInit {
       dateEmission: this.formaterDate(valeurs.dateEmission),
       dateEcheance: valeurs.dateEcheance ? this.formaterDate(valeurs.dateEcheance) : null,
       objet: valeurs.objet,
-      tauxAcompte: this.decimal(valeurs.tauxAcompte) ?? '30.00',
+      tauxAcompte: this.decimal(valeurs.tauxAcompte) ?? '0.00',
       client: valeurs.client ?? '',
       chantier: valeurs.chantier,
       ...(this.sourceAnnexe && !this.id() ? { documentSource: this.sourceAnnexe } : {}),
