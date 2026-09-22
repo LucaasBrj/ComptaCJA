@@ -15,6 +15,36 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'clients' },
       {
+        path: 'documents',
+        title: 'Documents - CJA',
+        loadComponent: () =>
+          import('./features/documents/liste/documents-liste').then((m) => m.DocumentsListe),
+      },
+      {
+        path: 'documents/nouveau',
+        title: 'Nouveau document - CJA',
+        loadComponent: () =>
+          import('./features/documents/editeur/document-editeur').then((m) => m.DocumentEditeur),
+      },
+      {
+        path: 'documents/:id',
+        title: 'Document - CJA',
+        loadComponent: () =>
+          import('./features/documents/editeur/document-editeur').then((m) => m.DocumentEditeur),
+      },
+      {
+        path: 'prestations',
+        title: 'Prestations - CJA',
+        loadComponent: () =>
+          import('./features/prestations/liste/prestations-liste').then((m) => m.PrestationsListe),
+      },
+      {
+        path: 'reglages',
+        title: 'Réglages - CJA',
+        loadComponent: () =>
+          import('./features/reglages/entreprise/reglages-entreprise').then((m) => m.ReglagesEntreprise),
+      },
+      {
         path: 'clients',
         title: 'Clients - CJA',
         loadComponent: () =>

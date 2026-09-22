@@ -1,0 +1,27 @@
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.carte {
+  padding: 0;
+  overflow: hidden;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}

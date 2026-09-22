@@ -1,0 +1,111 @@
+<header class="entete">
+  <div>
+    <h1 class="entete__titre">Réglages</h1>
+    <p class="entete__sous-titre">
+      Mentions légales imprimées sur les devis et factures. Les valeurs d'exemple sont fictives.
+    </p>
+  </div>
+  <button matButton="filled" type="button" (click)="enregistrer()" [disabled]="enregistrement()">
+    Enregistrer
+  </button>
+</header>
+
+@if (chargement() || enregistrement()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<form [formGroup]="formulaire" class="page">
+  <mat-card>
+    <h2>Entreprise</h2>
+    <div class="grille">
+      <mat-form-field>
+        <mat-label>Raison sociale</mat-label>
+        <input matInput formControlName="raisonSociale" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Forme juridique</mat-label>
+        <input matInput formControlName="formeJuridique" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>SIRET</mat-label>
+        <input matInput formControlName="siret" />
+        @if (erreurServeur(formulaire.controls.siret); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Code APE</mat-label>
+        <input matInput formControlName="codeApe" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>N° TVA intracommunautaire</mat-label>
+        <input matInput formControlName="numeroTvaIntracom" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Régime de TVA</mat-label>
+        <mat-select formControlName="regimeTva">
+          <mat-option value="FRANCHISE_293B">Franchise en base (art. 293 B)</mat-option>
+          <mat-option value="ASSUJETTI">Assujetti à la TVA</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Téléphone</mat-label>
+        <input matInput formControlName="telephone" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+      </mat-form-field>
+    </div>
+    <h3>Adresse</h3>
+    <app-adresse-champs [groupe]="formulaire.controls.adresse" />
+  </mat-card>
+
+  <mat-card>
+    <h2>Assurance décennale</h2>
+    <div class="grille">
+      <mat-form-field>
+        <mat-label>Assureur</mat-label>
+        <input matInput formControlName="assureurNom" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>N° de contrat</mat-label>
+        <input matInput formControlName="numeroContrat" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Couverture géographique</mat-label>
+        <input matInput formControlName="couvertureGeographique" />
+      </mat-form-field>
+    </div>
+  </mat-card>
+
+  <mat-card>
+    <h2>Paiement</h2>
+    <div class="grille">
+      <mat-form-field>
+        <mat-label>IBAN</mat-label>
+        <input matInput formControlName="iban" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>BIC</mat-label>
+        <input matInput formControlName="bic" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Banque</mat-label>
+        <input matInput formControlName="banque" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Indemnité de recouvrement (€)</mat-label>
+        <input matInput formControlName="indemniteRecouvrement" />
+      </mat-form-field>
+    </div>
+    <mat-form-field class="plein">
+      <mat-label>Conditions de règlement</mat-label>
+      <textarea matInput rows="2" formControlName="conditionsReglement"></textarea>
+    </mat-form-field>
+    <mat-form-field class="plein">
+      <mat-label>Pénalités de retard</mat-label>
+      <textarea matInput rows="2" formControlName="penalitesRetard"></textarea>
+    </mat-form-field>
+  </mat-card>
+</form>

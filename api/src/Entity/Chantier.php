@@ -57,13 +57,13 @@ class Chantier
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['chantier:read', 'client:item'])]
+    #[Groups(['chantier:read', 'client:item', 'document:read'])]
     private Uuid $id;
 
     #[ORM\Column(length: 180)]
     #[Assert\NotBlank(message: 'Le libelle du chantier est obligatoire.')]
     #[Assert\Length(max: 180)]
-    #[Groups(['chantier:read', 'chantier:write', 'client:item', 'client:write'])]
+    #[Groups(['chantier:read', 'chantier:write', 'client:item', 'client:write', 'document:read'])]
     private ?string $libelle = null;
 
     #[ORM\Embedded(class: Adresse::class, columnPrefix: 'adresse_')]
@@ -186,7 +186,7 @@ class Chantier
     /**
      * Libelle enrichi de la commune, tel qu'affiche dans le selecteur de chantier.
      */
-    #[Groups(['chantier:read', 'client:item'])]
+    #[Groups(['chantier:read', 'client:item', 'document:read'])]
     public function getLibelleComplet(): string
     {
         $ville = $this->adresse->getVille();

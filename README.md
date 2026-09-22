@@ -1,7 +1,7 @@
 # CJA — Devis, facturation et suivi de chantier
 
 Application de gestion pour artisan du bâtiment : base clientèle, chantiers, fournisseurs,
-devis et factures. Ce dépôt contient le **socle technique** et le **Lot 1 (base clientèle)**.
+devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)** et le **Lot 2 (devis, prestations, PDF)**.
 
 - `api/` — Symfony 7.4 LTS + API Platform 4.4 (PHP 8.5)
 - `frontend/` — Angular 22 + Angular Material
@@ -15,6 +15,19 @@ PHP 8.4+, Composer, Node 20+, et un runtime Docker. Sur macOS sans Docker Deskto
 brew install composer symfony node colima docker docker-compose
 colima start
 ```
+
+## Ce que couvre le Lot 2
+
+- **Devis et factures** de prestation, avec lignes de texte (titres, descriptifs) et lignes chiffrées.
+- **Bibliothèque** `PREST-ML`, `PREST-M2`, `PREST-U`, `PREST-FORFAIT`, prix seulement indicatifs.
+- **TVA** par les codes `0` (0 %), `1` (5,5 %), `2` (10 %) et `3` (20 %). Les totaux sont recalculés côté serveur.
+- **Verrou** : passer un brouillon à « Envoyé » fige les lignes. Ensuite, seul le statut peut changer.
+- **PDF** via Gotenberg (`GOTENBERG_URL`, défaut `http://127.0.0.1:3000/`) : en-tête, décennale, IBAN, pénalités, indemnité de 40 €, mention « TVA non applicable, art. 293 B du CGI » si le régime est la franchise et qu'une ligne est à 0 %.
+- **Réglages** : fiche entreprise unique, valeurs d'exemple à remplacer dans l'application.
+
+Les acomptes, annexes de débours, la duplication et les tableaux de bord restent aux lots suivants.
+
+Parcours : **Documents → Nouveau devis**, choisir le client, ajouter des lignes (code TVA `0` `1` `2` `3`), **Enregistrer**, puis **Télécharger le PDF**. **Marquer comme envoyé** fige la pièce. Les mentions (SIRET, assurance, IBAN, régime de TVA) se règlent dans **Réglages**, à partir des valeurs d'exemple chargées par les fixtures.
 
 ## Démarrage
 

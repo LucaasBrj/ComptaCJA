@@ -54,9 +54,12 @@ export class Shell {
   protected readonly tiroirOuvert = signal(true);
 
   protected readonly entrees: readonly EntreeMenu[] = [
+    { chemin: '/documents', libelle: 'Documents', icone: 'request_quote' },
     { chemin: '/clients', libelle: 'Clients', icone: 'groups' },
     { chemin: '/fournisseurs', libelle: 'Fournisseurs', icone: 'local_shipping' },
+    { chemin: '/prestations', libelle: 'Prestations', icone: 'straighten' },
     { chemin: '/imports', libelle: 'Importation', icone: 'upload_file' },
+    { chemin: '/reglages', libelle: 'Réglages', icone: 'settings' },
   ];
 
   protected basculerTiroir(): void {
