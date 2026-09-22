@@ -102,9 +102,9 @@ facture `FC2026-02-001`, la prochaine facture émise par l'application sera `FC2
 - **Acompte** sur le devis, 30 % par défaut, modifiable tant que le devis est en brouillon. Le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA.
 - **Facture d'acompte** : une fois le devis accepté, **Générer une facture d'acompte** crée la pièce `FA…`. Au retour sur le devis, le bouton devient **Voir facture d'acompte**.
 - **Facture de solde** : **Générer une facture de solde** reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`. Au retour, **Voir facture de solde**.
-- **Annexe de débours** : rattachée à un devis ou à une facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis.
+- **Annexe de débours** : **Générer une annexe de débours** ouvre un brouillon rattaché au devis ou à la facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis. Les annexes enregistrées se rouvrent depuis la pièce d'origine.
 
-Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Générer une facture d'acompte**. Après envoi de cet acompte, **Générer une facture de solde**. De retour sur le devis, ces boutons ouvrent la pièce déjà créée. **Annexe de débours** ouvre un brouillon prérempli depuis le devis ou la facture. La pièce n'existe qu'après **Enregistrer** ou **Marquer comme envoyé**.
+Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Générer une facture d'acompte**. Après envoi de cet acompte, **Générer une facture de solde**. De retour sur le devis, ces boutons ouvrent la pièce déjà créée. **Générer une annexe de débours** ouvre un brouillon prérempli ; la pièce n'existe qu'après **Enregistrer** ou **Marquer comme envoyé**, puis se rouvre depuis le devis ou la facture.
 
 ## Ce que couvre le Lot 4
 

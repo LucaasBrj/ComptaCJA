@@ -326,6 +326,15 @@ export class DocumentEditeur implements OnInit {
     return this.piecesLiees().find((piece) => piece.type === type && piece.statut !== 'ANNULE');
   }
 
+  protected annexesDebours(): readonly PieceLiee[] {
+    const type = this.formulaire.controls.type.value;
+    if (type !== 'DEVIS' && type !== 'FACTURE') {
+      return [];
+    }
+
+    return this.piecesLiees().filter((piece) => piece.type === 'ANNEXE_DEBOURS');
+  }
+
   protected ouvrirPiece(piece: PieceLiee): void {
     void this.router.navigate(['/documents', piece.id]);
   }
