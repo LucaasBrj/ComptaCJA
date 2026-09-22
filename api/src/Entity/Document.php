@@ -21,6 +21,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\QueryParameter;
 use App\Controller\DocumentPdfController;
 use App\Enum\StatutDocument;
+use App\State\PieceLieeProcessor;
 use App\Enum\TauxTva;
 use App\Enum\TypeDocument;
 use App\Enum\TypeLigne;
@@ -41,7 +42,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  *
  * Les devis et factures de prestation portent des lignes. Les montants d'en-tete
  * sont recalcules par le serveur et ignores s'ils sont envoyes par le client.
- * Les acomptes et annexes de debours restent reserves aux lots suivants.
+ * Une facture d'acompte, une facture de solde ou une annexe de debours
+ * n'existe que rattachee a une piece d'origine.
  */
 #[ORM\Entity(repositoryClass: DocumentRepository::class)]
 #[ORM\Table(name: 'document')]
@@ -68,6 +70,30 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
             read: true,
             output: false,
             name: 'document_pdf',
+        ),
+        new Post(
+            uriTemplate: '/documents/{id}/facture-acompte',
+            read: true,
+            input: false,
+            processor: PieceLieeProcessor::class,
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            name: 'document_facture_acompte',
+        ),
+        new Post(
+            uriTemplate: '/documents/{id}/facture-solde',
+            read: true,
+            input: false,
+            processor: PieceLieeProcessor::class,
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            name: 'document_facture_solde',
+        ),
+        new Post(
+            uriTemplate: '/documents/{id}/annexe-debours',
+            read: true,
+            input: false,
+            processor: PieceLieeProcessor::class,
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            name: 'document_annexe_debours',
         ),
     ],
     order: ['dateEmission' => 'DESC', 'numero' => 'DESC'],
@@ -158,6 +184,25 @@ class Document
     private ?Chantier $chantier = null;
 
     /**
+     * Pourcentage d'acompte a la signature. Seul un devis brouillon peut le changer.
+     */
+    #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, options: ['default' => '30.00'])]
+    #[Groups(['document:read', 'document:write', 'document:item'])]
+    private string $tauxAcompte = '30.00';
+
+    #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'piecesLiees')]
+    #[ORM\JoinColumn(nullable: true)]
+    #[Groups(['document:item'])]
+    #[ApiProperty(writable: false, readableLink: false)]
+    private ?Document $documentSource = null;
+
+    /**
+     * @var Collection<int, Document>
+     */
+    #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'documentSource')]
+    private Collection $piecesLiees;
+
+    /**
      * @var Collection<int, LigneDocument>
      */
     #[ORM\OneToMany(targetEntity: LigneDocument::class, mappedBy: 'document', cascade: ['persist', 'remove'], orphanRemoval: true)]
@@ -189,14 +234,24 @@ class Document
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable();
         $this->lignes = new ArrayCollection();
+        $this->piecesLiees = new ArrayCollection();
     }
 
     #[Assert\Callback]
     public function validerCoherence(ExecutionContextInterface $contexte): void
     {
-        if (!$this->legacy && null !== $this->type && !\in_array($this->type, [TypeDocument::DEVIS, TypeDocument::FACTURE], true)) {
-            $contexte->buildViolation('Seuls les devis et les factures de prestation peuvent etre saisis. Les acomptes et les debours arrivent a un lot ulterieur.')
+        $saisieLibre = \in_array($this->type, [TypeDocument::DEVIS, TypeDocument::FACTURE], true);
+        if (!$this->legacy && null !== $this->type && !$saisieLibre && null === $this->documentSource) {
+            $contexte->buildViolation('Les factures d\'acompte et les annexes de debours se generent depuis un devis ou une facture.')
                 ->atPath('type')
+                ->addViolation();
+        }
+
+        if (TypeDocument::DEVIS === $this->type
+            && (1 !== bccomp($this->tauxAcompte, '0', 2) || 1 === bccomp($this->tauxAcompte, '100', 2))
+        ) {
+            $contexte->buildViolation('Le taux d\'acompte doit etre superieur a 0 et inferieur ou egal a 100.')
+                ->atPath('tauxAcompte')
                 ->addViolation();
         }
 
@@ -346,6 +401,79 @@ class Document
         return $this;
     }
 
+    public function getTauxAcompte(): string
+    {
+        return $this->tauxAcompte;
+    }
+
+    public function setTauxAcompte(?string $tauxAcompte): self
+    {
+        $this->tauxAcompte = (null === $tauxAcompte || '' === $tauxAcompte) ? '30.00' : $tauxAcompte;
+
+        return $this;
+    }
+
+    public function getDocumentSource(): ?Document
+    {
+        return $this->documentSource;
+    }
+
+    public function setDocumentSource(?Document $documentSource): self
+    {
+        $this->documentSource = $documentSource;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Document>
+     */
+    public function getPiecesLiees(): Collection
+    {
+        return $this->piecesLiees;
+    }
+
+    /**
+     * Resume court pour le GET unitaire, sans redescendre dans les pieces liees.
+     *
+     * @return list<array{id: string, numero: ?string, type: ?string, statut: string, montantTtc: string}>
+     */
+    #[Groups(['document:item'])]
+    public function getPiecesLieesResume(): array
+    {
+        $resume = [];
+
+        foreach ($this->piecesLiees as $piece) {
+            $resume[] = [
+                'id' => (string) $piece->getId(),
+                'numero' => $piece->getNumero(),
+                'type' => $piece->getType()?->value,
+                'statut' => $piece->getStatut()->value,
+                'montantTtc' => $piece->getMontantTtc(),
+            ];
+        }
+
+        return $resume;
+    }
+
+    /**
+     * Lignes de l'annexe regroupees par nom de fournisseur, pour le PDF.
+     *
+     * @return array<string, list<LigneDocument>>
+     */
+    public function getGroupesDebours(): array
+    {
+        /** @var array<string, list<LigneDocument>> $groupes */
+        $groupes = [];
+
+        foreach ($this->lignes as $ligne) {
+            $nom = $ligne->getFournisseur()?->getNom() ?? 'Fournisseur';
+            $groupes[$nom][] = $ligne;
+        }
+
+        return $groupes;
+    }
+
     public function isLegacy(): bool
     {
         return $this->legacy;
@@ -411,7 +539,7 @@ class Document
         $paniers = [];
 
         foreach ($this->lignes as $ligne) {
-            if (TypeLigne::PRESTATION !== $ligne->getType() || null === $ligne->getTauxTva()) {
+            if (TypeLigne::TEXTE === $ligne->getType() || null === $ligne->getTauxTva()) {
                 continue;
             }
 

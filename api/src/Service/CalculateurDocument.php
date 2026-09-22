@@ -36,12 +36,13 @@ final class CalculateurDocument
 
     private function recalculerLigne(LigneDocument $ligne): void
     {
-        if (TypeLigne::PRESTATION !== $ligne->getType()) {
+        if (TypeLigne::TEXTE === $ligne->getType() || null === $ligne->getType()) {
             $ligne
                 ->setUnite(null)
                 ->setQuantite(null)
                 ->setPrixUnitaireHt(null)
                 ->setTauxTva(null)
+                ->setFournisseur(null)
                 ->setMontantHt('0.00')
                 ->setMontantTva('0.00')
                 ->setMontantTtc('0.00');
@@ -52,8 +53,9 @@ final class CalculateurDocument
         $quantite = $ligne->getQuantite() ?? '0';
         $prix = $ligne->getPrixUnitaireHt() ?? '0';
         $pourcentage = $ligne->getTauxTva()?->pourcentage() ?? '0';
+        $signe = TypeLigne::DEDUCTION === $ligne->getType() ? '-1' : '1';
 
-        $montantHt = $this->arrondir(bcmul($quantite, $prix, 6));
+        $montantHt = $this->arrondir(bcmul(bcmul($quantite, $prix, 6), $signe, 6));
         $montantTva = $this->arrondir(bcmul($montantHt, bcdiv($pourcentage, '100', 6), 6));
         $montantTtc = bcadd($montantHt, $montantTva, 2);
 

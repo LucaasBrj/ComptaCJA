@@ -1,7 +1,7 @@
 # CJA — Devis, facturation et suivi de chantier
 
 Application de gestion pour artisan du bâtiment : base clientèle, chantiers, fournisseurs,
-devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)** et le **Lot 2 (devis, prestations, PDF)**.
+devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)**, le **Lot 2 (devis, prestations, PDF)** et le **Lot 3 (acomptes, solde, débours)**.
 
 - `api/` — Symfony 7.4 LTS + API Platform 4.4 (PHP 8.5)
 - `frontend/` — Angular 22 + Angular Material
@@ -25,9 +25,16 @@ colima start
 - **PDF** via Gotenberg (`GOTENBERG_URL`, défaut `http://127.0.0.1:3000/`) : en-tête, décennale, IBAN, pénalités, indemnité de 40 €, mention « TVA non applicable, art. 293 B du CGI » si le régime est la franchise et qu'une ligne est à 0 %.
 - **Réglages** : fiche entreprise unique, valeurs d'exemple à remplacer dans l'application.
 
-Les acomptes, annexes de débours, la duplication et les tableaux de bord restent aux lots suivants.
+La duplication, la recherche globale et les tableaux de bord restent au lot 4.
 
-Parcours : **Documents → Nouveau devis**, choisir le client, ajouter des lignes (code TVA `0` `1` `2` `3`), **Enregistrer**, puis **Télécharger le PDF**. **Marquer comme envoyé** fige la pièce. Les mentions (SIRET, assurance, IBAN, régime de TVA) se règlent dans **Réglages**, à partir des valeurs d'exemple chargées par les fixtures.
+## Ce que couvre le Lot 3
+
+- **Acompte** sur le devis, 30 % par défaut, modifiable tant que le devis est en brouillon. Le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA.
+- **Facture d'acompte** : une fois le devis accepté, un clic crée la pièce `FA…`. Une seconde facture d'acompte est refusée.
+- **Facture de solde** : reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`.
+- **Annexe de débours** : rattachée à un devis ou à une facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis.
+
+Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Facture d'acompte**. Après envoi de cet acompte, **Facture de solde**. **Annexe de débours** se crée depuis le devis ou la facture, puis se complète avec les fournisseurs.
 
 ## Démarrage
 
@@ -107,11 +114,10 @@ cd api && php bin/phpunit
 ```
 
 Les tests repartent d'un schéma vierge à chaque cas et couvrent le refus d'accès sans
-jeton, la numérotation séquentielle, la validation du SIRET, les filtres de recherche et
-les quatre chemins de l'assistant d'importation.
+jeton, la numérotation séquentielle, la validation du SIRET, les filtres de recherche,
+l'assistant d'importation, le calcul de TVA, le PDF et les acomptes.
 
 ## Hors périmètre à ce stade
 
-Lignes de prestation et codes TVA, génération des PDF via Gotenberg, factures d'acompte,
-annexes de débours et tableaux de bord arrivent aux lots suivants. Le conteneur Gotenberg
-est déjà provisionné mais n'est pas encore appelé.
+La duplication, la recherche globale, les tableaux de bord et l'export comptable restent
+au lot 4.

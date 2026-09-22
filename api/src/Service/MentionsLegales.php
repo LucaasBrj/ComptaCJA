@@ -22,7 +22,7 @@ final class MentionsLegales
         }
 
         foreach ($document->getLignes() as $ligne) {
-            if (TypeLigne::PRESTATION === $ligne->getType() && TauxTva::EXONERE === $ligne->getTauxTva()) {
+            if ($ligne->getType()?->estChiffree() && TauxTva::EXONERE === $ligne->getTauxTva()) {
                 return true;
             }
         }

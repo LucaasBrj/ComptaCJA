@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Enum\TauxTva;
+use App\Enum\TypeDocument;
 use App\Enum\TypeLigne;
 use App\Enum\UnitePrestation;
 use Doctrine\DBAL\Types\Types;
@@ -36,6 +37,11 @@ class LigneDocument
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['document:item', 'document:write'])]
     private ?Prestation $prestation = null;
+
+    #[ORM\ManyToOne(targetEntity: Fournisseur::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    #[Groups(['document:item', 'document:write'])]
+    private ?Fournisseur $fournisseur = null;
 
     #[ORM\Column(type: Types::STRING, length: 20, enumType: TypeLigne::class)]
     #[Assert\NotNull(message: 'Le type de ligne est obligatoire.')]
@@ -87,12 +93,36 @@ class LigneDocument
     #[Assert\Callback]
     public function validerChiffrement(ExecutionContextInterface $contexte): void
     {
-        if (TypeLigne::PRESTATION !== $this->type) {
+        if (null === $this->type || !$this->type->estChiffree()) {
             return;
         }
 
+        if (TypeLigne::DEBOURS === $this->type && TypeDocument::ANNEXE_DEBOURS !== $this->document?->getType()) {
+            $contexte->buildViolation('Une ligne de debours ne figure que sur une annexe de debours.')
+                ->atPath('type')
+                ->addViolation();
+        }
+
+        if (TypeLigne::DEDUCTION === $this->type && TypeDocument::FACTURE !== $this->document?->getType()) {
+            $contexte->buildViolation('Une deduction ne figure que sur une facture.')
+                ->atPath('type')
+                ->addViolation();
+        }
+
+        if (TypeLigne::PRESTATION === $this->type && TypeDocument::ANNEXE_DEBOURS === $this->document?->getType()) {
+            $contexte->buildViolation('Une annexe de debours se saisit par fournisseur, sans ligne de prestation.')
+                ->atPath('type')
+                ->addViolation();
+        }
+
+        if (TypeLigne::DEBOURS === $this->type && null === $this->fournisseur) {
+            $contexte->buildViolation('Le fournisseur est obligatoire pour un debours.')
+                ->atPath('fournisseur')
+                ->addViolation();
+        }
+
         if (null === $this->unite) {
-            $contexte->buildViolation("L'unite est obligatoire pour une ligne de prestation.")
+            $contexte->buildViolation("L'unite est obligatoire.")
                 ->atPath('unite')
                 ->addViolation();
         }
@@ -141,6 +171,18 @@ class LigneDocument
     public function setPrestation(?Prestation $prestation): self
     {
         $this->prestation = $prestation;
+
+        return $this;
+    }
+
+    public function getFournisseur(): ?Fournisseur
+    {
+        return $this->fournisseur;
+    }
+
+    public function setFournisseur(?Fournisseur $fournisseur): self
+    {
+        $this->fournisseur = $fournisseur;
 
         return $this;
     }

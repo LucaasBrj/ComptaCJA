@@ -29,7 +29,7 @@
         .totaux .net { font-size: 14px; font-weight: 700; }
         .mentions { margin-top: 22px; color: #44403c; font-size: 10px; }
         .mentions p + p { margin-top: 6px; }
-        .franchise { margin-top: 12px; font-weight: 700; }
+        .franchise, .acompte { margin-top: 12px; font-weight: 700; }
         .filigrane {
             position: fixed; top: 40%; left: 8%;
             font-size: 72px; font-weight: 700; color: rgba(28, 25, 23, 0.12);
@@ -59,6 +59,9 @@
         <td class="numero">
             <strong>{{ document.type.libelle }}</strong>
             <span>{{ document.numero }}</span>
+            {% if document.type.value == 'ANNEXE_DEBOURS' and document.documentSource %}
+                <p class="meta">Annexe au {{ document.documentSource.type.libelle|lower }} {{ document.documentSource.numero }}</p>
+            {% endif %}
             <p class="meta">
                 Émis le {{ document.dateEmission|date('d/m/Y') }}
                 {% if document.dateEcheance %}<br>Échéance {{ document.dateEcheance|date('d/m/Y') }}{% endif %}
@@ -105,22 +108,26 @@
         </tr>
     </thead>
     <tbody>
-    {% for ligne in document.lignes %}
-        {% if ligne.type.value == 'TEXTE' %}
+    {% if document.type.value == 'ANNEXE_DEBOURS' %}
+        {% for nom, groupe in document.groupesDebours %}
             <tr class="titre-section">
-                <td colspan="6">{{ ligne.libelle|nl2br }}</td>
+                <td colspan="6">{{ nom }}</td>
             </tr>
-        {% else %}
-            <tr>
-                <td>{{ ligne.libelle|nl2br }}</td>
-                <td class="nombre">{{ ligne.quantite }}</td>
-                <td>{{ ligne.unite.libelle }}</td>
-                <td class="nombre">{{ ligne.prixUnitaireHt }} €</td>
-                <td class="nombre">{{ ligne.tauxTva.libelle }}</td>
-                <td class="nombre">{{ ligne.montantHt }} €</td>
-            </tr>
-        {% endif %}
-    {% endfor %}
+            {% for ligne in groupe %}
+                {% include 'document/_ligne.html.twig' with { ligne: ligne } %}
+            {% endfor %}
+        {% endfor %}
+    {% else %}
+        {% for ligne in document.lignes %}
+            {% if ligne.type.value == 'TEXTE' %}
+                <tr class="titre-section">
+                    <td colspan="6">{{ ligne.libelle|nl2br }}</td>
+                </tr>
+            {% else %}
+                {% include 'document/_ligne.html.twig' with { ligne: ligne } %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
     </tbody>
 </table>
 
@@ -144,6 +151,10 @@
     </tr>
 </table>
 
+{% if libelleAcompte %}
+    <p class="acompte">Acompte de {{ libelleAcompte }} % à verser à la signature du devis : {{ montantAcompte }} €.</p>
+{% endif %}
+
 {% if mentionFranchise %}
     <p class="franchise">TVA non applicable, art. 293 B du CGI</p>
 {% endif %}
@@ -164,6 +175,9 @@
         {{ entreprise.penalitesRetard }}
         Indemnité forfaitaire pour frais de recouvrement : {{ entreprise.indemniteRecouvrement }} €.
     </p>
+    {% if document.type.value == 'ANNEXE_DEBOURS' %}
+        <p>Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.</p>
+    {% endif %}
 </div>
 </body>
 </html>

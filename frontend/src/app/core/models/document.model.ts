@@ -2,7 +2,7 @@ import { RessourceApi } from './api.model';
 import { Adresse, Chantier, TypeDocument, StatutDocument } from './client.model';
 
 export type TauxTva = '0' | '1' | '2' | '3';
-export type TypeLigne = 'TEXTE' | 'PRESTATION';
+export type TypeLigne = 'TEXTE' | 'PRESTATION' | 'DEDUCTION' | 'DEBOURS';
 export type UnitePrestation = 'U' | 'M2' | 'ML' | 'FORFAIT';
 export type RegimeTva = 'FRANCHISE_293B' | 'ASSUJETTI';
 
@@ -40,6 +40,7 @@ export interface LigneDocument {
   montantTva?: string;
   montantTtc?: string;
   prestation?: string | null;
+  fournisseur?: string | { readonly '@id'?: string; readonly nom?: string } | null;
 }
 
 export interface DocumentDetail extends RessourceApi {
@@ -57,6 +58,17 @@ export interface DocumentDetail extends RessourceApi {
   client: ResumeClient | string;
   chantier?: (Chantier & { '@id'?: string }) | string | null;
   lignes: LigneDocument[];
+  tauxAcompte?: string;
+  documentSource?: string | null;
+  piecesLieesResume?: readonly PieceLiee[];
+}
+
+export interface PieceLiee {
+  readonly id: string;
+  readonly numero: string | null;
+  readonly type: string | null;
+  readonly statut: string;
+  readonly montantTtc: string;
 }
 
 export interface Prestation extends RessourceApi {
@@ -117,11 +129,17 @@ export function calculerTotaux(
   let tva = 0;
 
   for (const ligne of lignes) {
-    if (ligne.type !== 'PRESTATION' || !ligne.quantite || !ligne.prixUnitaireHt || !ligne.tauxTva) {
+    if (
+      (ligne.type !== 'PRESTATION' && ligne.type !== 'DEBOURS' && ligne.type !== 'DEDUCTION') ||
+      !ligne.quantite ||
+      !ligne.prixUnitaireHt ||
+      !ligne.tauxTva
+    ) {
       continue;
     }
 
-    const montantHt = arrondir(Number(ligne.quantite) * Number(ligne.prixUnitaireHt));
+    const signe = ligne.type === 'DEDUCTION' ? -1 : 1;
+    const montantHt = arrondir(signe * Number(ligne.quantite) * Number(ligne.prixUnitaireHt));
     const taux = TAUX_TVA.find((item) => item.code === ligne.tauxTva)?.taux ?? 0;
     const montantTva = arrondir((montantHt * taux) / 100);
     const panier = paniers.get(ligne.tauxTva) ?? { ht: 0, tva: 0 };
@@ -143,6 +161,25 @@ export function calculerTotaux(
       tva: panier.tva,
     })),
   };
+}
+
+/** Montant TTC de l'acompte, au prorata du HT de chaque taux. Apercu seulement. */
+export function montantAcompte(ventilation: readonly VentilationTva[], taux: string): number {
+  const pourcentage = Number(taux.replace(',', '.'));
+
+  if (!pourcentage) {
+    return 0;
+  }
+
+  let ttc = 0;
+
+  for (const panier of ventilation) {
+    const ht = arrondir((panier.ht * pourcentage) / 100);
+    const rate = TAUX_TVA.find((item) => item.code === panier.code)?.taux ?? 0;
+    ttc = arrondir(ttc + ht + arrondir((ht * rate) / 100));
+  }
+
+  return ttc;
 }
 
 function arrondir(valeur: number): number {
