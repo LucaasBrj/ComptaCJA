@@ -1,0 +1,43 @@
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+mat-card {
+  padding: 1rem;
+}
+
+h2,
+h3 {
+  margin: 0 0 0.75rem;
+}
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.plein {
+  width: 100%;
+}

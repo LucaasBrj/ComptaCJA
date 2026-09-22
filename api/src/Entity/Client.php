@@ -81,14 +81,14 @@ class Client
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['client:read'])]
+    #[Groups(['client:read', 'document:read'])]
     private Uuid $id;
 
     /**
      * Attribue par le NumberGenerator, jamais saisi par l'utilisateur.
      */
     #[ORM\Column(length: 20, unique: true)]
-    #[Groups(['client:read'])]
+    #[Groups(['client:read', 'document:read'])]
     #[ApiProperty(writable: false, example: 'CLI-0001')]
     private ?string $numeroClient = null;
 
@@ -406,7 +406,7 @@ class Client
     /**
      * Libelle unique affiche dans les listes, les selecteurs et les PDF.
      */
-    #[Groups(['client:read'])]
+    #[Groups(['client:read', 'document:read'])]
     public function getNomAffichage(): string
     {
         if (TypologieClient::PROFESSIONNEL === $this->typologie && null !== $this->raisonSociale) {

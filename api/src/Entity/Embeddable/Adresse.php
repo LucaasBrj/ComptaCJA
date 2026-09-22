@@ -16,27 +16,27 @@ class Adresse
 {
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
-    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write', 'entreprise:read', 'entreprise:write'])]
     private ?string $ligne1 = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(max: 255)]
-    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write', 'entreprise:read', 'entreprise:write'])]
     private ?string $ligne2 = null;
 
     #[ORM\Column(length: 10, nullable: true)]
     #[Assert\Regex(pattern: '/^\d{5}$/', message: 'Le code postal doit comporter 5 chiffres.')]
-    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write', 'entreprise:read', 'entreprise:write'])]
     private ?string $codePostal = null;
 
     #[ORM\Column(length: 120, nullable: true)]
     #[Assert\Length(max: 120)]
-    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write', 'entreprise:read', 'entreprise:write'])]
     private ?string $ville = null;
 
     #[ORM\Column(length: 80, nullable: true, options: ['default' => 'France'])]
     #[Assert\Length(max: 80)]
-    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['client:read', 'client:write', 'chantier:read', 'chantier:write', 'fournisseur:read', 'fournisseur:write', 'entreprise:read', 'entreprise:write'])]
     private ?string $pays = 'France';
 
     public function getLigne1(): ?string

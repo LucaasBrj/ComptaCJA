@@ -173,7 +173,7 @@
                 <ng-container matColumnDef="numero">
                   <th mat-header-cell *matHeaderCellDef>Numéro</th>
                   <td mat-cell *matCellDef="let document">
-                    <span class="mono">{{ document.numero }}</span>
+                    <a class="mono" [routerLink]="['/documents', identifiant(document)]">{{ document.numero }}</a>
                     @if (document.legacy) {
                       <mat-icon class="badge-legacy" matTooltip="Pièce reprise d'un ancien outil">
                         history
@@ -221,8 +221,10 @@
               <mat-icon>receipt_long</mat-icon>
               <p>Aucun devis ni facture pour ce client.</p>
               <p class="vide-etat__aide">
-                Importez votre historique depuis l'assistant d'importation, ou attendez le lot 2
-                pour créer vos premiers devis.
+                <a routerLink="/documents/nouveau" [queryParams]="{ client: id(), type: 'DEVIS' }">
+                  Créer un devis
+                </a>
+                ou importez l'historique depuis l'assistant d'importation.
               </p>
             </div>
           }

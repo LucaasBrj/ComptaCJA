@@ -1,0 +1,61 @@
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+
+  &__titre {
+    margin: 0;
+    font: var(--mat-sys-headline-small);
+  }
+
+  &__sous-titre {
+    margin: 0.25rem 0 0;
+    color: var(--mat-sys-on-surface-variant);
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+.carte {
+  padding: 0;
+  overflow: hidden;
+}
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+
+  &__recherche {
+    flex: 2 1 16rem;
+  }
+}
+
+.tableau-defilant {
+  overflow-x: auto;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.aligne-droite {
+  text-align: right;
+}
+
+.vide-etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--mat-sys-on-surface-variant);
+}

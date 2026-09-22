@@ -8,26 +8,40 @@ use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\DateFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\FreeTextQueryFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrFilter;
+use ApiPlatform\Doctrine\Orm\Filter\PartialSearchFilter;
 use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\QueryParameter;
+use App\Controller\DocumentPdfController;
 use App\Enum\StatutDocument;
+use App\Enum\TauxTva;
 use App\Enum\TypeDocument;
+use App\Enum\TypeLigne;
 use App\Repository\DocumentRepository;
+use App\State\DocumentProcessor;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Piece commerciale (devis, facture, facture d'acompte, annexe de debours).
  *
- * Volontairement reduite aux en-tetes au Lot 1 : elle porte les montants et le statut,
- * ce qui suffit a reprendre l'historique comptable sans rupture de numerotation.
- * Le Lot 2 y ajoutera les lignes de prestation et le moteur de calcul de TVA.
+ * Les devis et factures de prestation portent des lignes. Les montants d'en-tete
+ * sont recalcules par le serveur et ignores s'ils sont envoyes par le client.
+ * Les acomptes et annexes de debours restent reserves aux lots suivants.
  */
 #[ORM\Entity(repositoryClass: DocumentRepository::class)]
 #[ORM\Table(name: 'document')]
@@ -37,9 +51,32 @@ use Symfony\Component\Validator\Constraints as Assert;
     shortName: 'Document',
     operations: [
         new GetCollection(normalizationContext: ['groups' => ['document:read']]),
-        new Get(normalizationContext: ['groups' => ['document:read']]),
+        new Get(normalizationContext: ['groups' => ['document:read', 'document:item']]),
+        new Post(
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            denormalizationContext: ['groups' => ['document:write']],
+            processor: DocumentProcessor::class,
+        ),
+        new Patch(
+            normalizationContext: ['groups' => ['document:read', 'document:item']],
+            denormalizationContext: ['groups' => ['document:write']],
+            processor: DocumentProcessor::class,
+        ),
+        new Get(
+            uriTemplate: '/documents/{id}/pdf',
+            controller: DocumentPdfController::class,
+            read: true,
+            output: false,
+            name: 'document_pdf',
+        ),
     ],
     order: ['dateEmission' => 'DESC', 'numero' => 'DESC'],
+)]
+#[QueryParameter(
+    key: 'recherche',
+    filter: new FreeTextQueryFilter(new OrFilter(new PartialSearchFilter())),
+    properties: ['numero', 'objet'],
+    description: 'Recherche partielle simultanee sur le numero et l\'objet.',
 )]
 #[ApiFilter(SearchFilter::class, properties: [
     'numero' => 'partial',
@@ -60,31 +97,31 @@ class Document
     private Uuid $id;
 
     #[ORM\Column(length: 30, unique: true)]
-    #[Assert\NotBlank(message: 'Le numero de document est obligatoire.')]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private ?string $numero = null;
 
     #[ORM\Column(type: Types::STRING, length: 30, enumType: TypeDocument::class)]
-    #[Assert\NotNull]
-    #[Groups(['document:read', 'client:item'])]
+    #[Assert\NotNull(message: 'Le type de piece est obligatoire.')]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private ?TypeDocument $type = null;
 
     #[ORM\Column(type: Types::STRING, length: 20, enumType: StatutDocument::class)]
     #[Assert\NotNull]
-    #[Groups(['document:read', 'client:item'])]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private StatutDocument $statut = StatutDocument::BROUILLON;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     #[Assert\NotNull(message: "La date d'emission est obligatoire.")]
-    #[Groups(['document:read', 'client:item'])]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private ?\DateTimeImmutable $dateEmission = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
-    #[Groups(['document:read', 'client:item'])]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private ?\DateTimeImmutable $dateEcheance = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['document:read', 'client:item'])]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private ?string $objet = null;
 
     /**
@@ -94,28 +131,40 @@ class Document
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, options: ['default' => '0.00'])]
     #[Assert\PositiveOrZero]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private string $montantHt = '0.00';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, options: ['default' => '0.00'])]
     #[Assert\PositiveOrZero]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private string $montantTva = '0.00';
 
     #[ORM\Column(type: Types::DECIMAL, precision: 12, scale: 2, options: ['default' => '0.00'])]
     #[Assert\PositiveOrZero]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private string $montantTtc = '0.00';
 
     #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotNull]
-    #[Groups(['document:read'])]
+    #[Assert\NotNull(message: 'Le client est obligatoire.')]
+    #[Groups(['document:read', 'document:write'])]
     private ?Client $client = null;
 
     #[ORM\ManyToOne(targetEntity: Chantier::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
-    #[Groups(['document:read', 'client:item'])]
+    #[Groups(['document:read', 'document:write', 'client:item'])]
     private ?Chantier $chantier = null;
+
+    /**
+     * @var Collection<int, LigneDocument>
+     */
+    #[ORM\OneToMany(targetEntity: LigneDocument::class, mappedBy: 'document', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OrderBy(['position' => 'ASC'])]
+    #[Assert\Valid]
+    #[Groups(['document:item', 'document:write'])]
+    private Collection $lignes;
 
     /**
      * Piece reprise d'un ancien outil : elle occupe un numero dans la sequence
@@ -123,10 +172,12 @@ class Document
      */
     #[ORM\Column(options: ['default' => false])]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private bool $legacy = false;
 
     #[ORM\Column(options: ['default' => false])]
     #[Groups(['document:read', 'client:item'])]
+    #[ApiProperty(writable: false)]
     private bool $verrouille = false;
 
     #[ORM\Column]
@@ -137,6 +188,25 @@ class Document
     {
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable();
+        $this->lignes = new ArrayCollection();
+    }
+
+    #[Assert\Callback]
+    public function validerCoherence(ExecutionContextInterface $contexte): void
+    {
+        if (!$this->legacy && null !== $this->type && !\in_array($this->type, [TypeDocument::DEVIS, TypeDocument::FACTURE], true)) {
+            $contexte->buildViolation('Seuls les devis et les factures de prestation peuvent etre saisis. Les acomptes et les debours arrivent a un lot ulterieur.')
+                ->atPath('type')
+                ->addViolation();
+        }
+
+        if (null !== $this->chantier && null !== $this->client
+            && (string) $this->chantier->getClient()?->getId() !== (string) $this->client->getId()
+        ) {
+            $contexte->buildViolation("Le chantier selectionne n'appartient pas a ce client.")
+                ->atPath('chantier')
+                ->addViolation();
+        }
     }
 
     public function getId(): Uuid
@@ -303,5 +373,54 @@ class Document
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    /**
+     * @return Collection<int, LigneDocument>
+     */
+    public function getLignes(): Collection
+    {
+        return $this->lignes;
+    }
+
+    /**
+     * Remplace integralement les lignes : le payload de l'editeur est la liste complete.
+     *
+     * @param iterable<LigneDocument> $lignes
+     */
+    public function setLignes(iterable $lignes): self
+    {
+        $this->lignes->clear();
+
+        foreach ($lignes as $ligne) {
+            $ligne->setDocument($this);
+            $this->lignes->add($ligne);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Totaux HT et TVA regroupes par taux, pour le PDF.
+     *
+     * @return list<array{taux: TauxTva, ht: string, tva: string}>
+     */
+    public function getVentilationTva(): array
+    {
+        /** @var array<string, array{taux: TauxTva, ht: string, tva: string}> $paniers */
+        $paniers = [];
+
+        foreach ($this->lignes as $ligne) {
+            if (TypeLigne::PRESTATION !== $ligne->getType() || null === $ligne->getTauxTva()) {
+                continue;
+            }
+
+            $cle = $ligne->getTauxTva()->value;
+            $paniers[$cle] ??= ['taux' => $ligne->getTauxTva(), 'ht' => '0.00', 'tva' => '0.00'];
+            $paniers[$cle]['ht'] = bcadd($paniers[$cle]['ht'], $ligne->getMontantHt(), 2);
+            $paniers[$cle]['tva'] = bcadd($paniers[$cle]['tva'], $ligne->getMontantTva(), 2);
+        }
+
+        return array_values($paniers);
     }
 }

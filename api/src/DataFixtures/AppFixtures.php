@@ -6,9 +6,14 @@ namespace App\DataFixtures;
 
 use App\Entity\Chantier;
 use App\Entity\Client;
+use App\Entity\Entreprise;
 use App\Entity\Fournisseur;
+use App\Entity\Prestation;
 use App\Entity\User;
+use App\Enum\RegimeTva;
+use App\Enum\TauxTva;
 use App\Enum\TypologieClient;
+use App\Enum\UnitePrestation;
 use App\Service\NumberGenerator;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -38,6 +43,7 @@ final class AppFixtures extends Fixture
             ->setRoles(['ROLE_ADMIN']);
         $artisan->setPassword($this->passwordHasher->hashPassword($artisan, self::MOT_DE_PASSE_ARTISAN));
         $manager->persist($artisan);
+        $this->chargerReferentiel($manager);
 
         foreach ($this->fournisseurs() as $donnees) {
             $fournisseur = (new Fournisseur())
@@ -98,6 +104,54 @@ final class AppFixtures extends Fixture
 
             throw $exception;
         }
+    }
+
+    /**
+     * Bibliotheque de prestations du PRD et fiche entreprise fictive,
+     * a remplacer depuis l'ecran Reglages.
+     */
+    private function chargerReferentiel(ObjectManager $manager): void
+    {
+        $catalogue = [
+            ['PREST-ML', 'Prestation au metre lineaire', UnitePrestation::METRE_LINEAIRE, TauxTva::INTERMEDIAIRE, null],
+            ['PREST-M2', 'Prestation au metre carre', UnitePrestation::METRE_CARRE, TauxTva::INTERMEDIAIRE, null],
+            ['PREST-U', 'Prestation a l\'unite', UnitePrestation::UNITE, TauxTva::NORMAL, null],
+            ['PREST-FORFAIT', 'Prestation au forfait', UnitePrestation::FORFAIT, TauxTva::INTERMEDIAIRE, null],
+        ];
+
+        foreach ($catalogue as [$code, $libelle, $unite, $taux, $prix]) {
+            $manager->persist(
+                (new Prestation())
+                    ->setCode($code)
+                    ->setLibelle($libelle)
+                    ->setUnite($unite)
+                    ->setTauxTvaDefaut($taux)
+                    ->setPrixUnitaireHtDefaut($prix),
+            );
+        }
+
+        $entreprise = (new Entreprise())
+            ->setRaisonSociale('CJA Batiment')
+            ->setFormeJuridique('Entreprise individuelle')
+            ->setSiret('73282932000074')
+            ->setCodeApe('4399C')
+            ->setNumeroTvaIntracom('FR40303265045')
+            ->setTelephone('0612345678')
+            ->setEmail('contact@cja-batiment.test')
+            ->setRegimeTva(RegimeTva::FRANCHISE_293B)
+            ->setAssureurNom('AXA (exemple)')
+            ->setNumeroContrat('DEC-EXEMPLE-0001')
+            ->setCouvertureGeographique('France metropolitaine')
+            ->setIban('FR7630001007941234567890185')
+            ->setBic('BNPAFRPP')
+            ->setBanque('BNP Paribas (exemple)')
+            ->setIndemniteRecouvrement('40.00');
+        $entreprise->getAdresse()
+            ->setLigne1('12 rue des Artisans')
+            ->setCodePostal('31000')
+            ->setVille('Toulouse');
+
+        $manager->persist($entreprise);
     }
 
     /**

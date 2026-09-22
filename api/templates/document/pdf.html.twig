@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ document.type.libelle }} {{ document.numero }}</title>
+    <style>
+        @page { margin: 14mm 12mm 18mm; }
+        * { box-sizing: border-box; }
+        body { margin: 0; color: #1c1917; font: 11px/1.45 "Liberation Sans", Arial, sans-serif; }
+        h1 { margin: 0; font-size: 22px; letter-spacing: 0.04em; }
+        h2 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: #57534e; }
+        p { margin: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        .entete, .parties, .totaux { width: 100%; }
+        .entete td { vertical-align: top; }
+        .numero { text-align: right; }
+        .numero strong { display: block; font-size: 16px; }
+        .meta { margin-top: 4px; color: #57534e; }
+        .parties { margin: 22px 0; }
+        .parties td { width: 50%; vertical-align: top; padding-right: 16px; }
+        .carte { border: 1px solid #e7e5e4; border-radius: 6px; padding: 10px 12px; min-height: 72px; }
+        .lignes { margin-top: 8px; }
+        .lignes th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: #57534e; border-bottom: 1px solid #1c1917; padding: 6px 4px; }
+        .lignes td { padding: 7px 4px; border-bottom: 1px solid #e7e5e4; vertical-align: top; }
+        .nombre { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .titre-section td { background: #f5f5f4; font-weight: 700; border-bottom-color: #d6d3d1; }
+        .totaux { margin-top: 14px; }
+        .totaux td { padding: 3px 4px; }
+        .totaux .net { font-size: 14px; font-weight: 700; }
+        .mentions { margin-top: 22px; color: #44403c; font-size: 10px; }
+        .mentions p + p { margin-top: 6px; }
+        .franchise { margin-top: 12px; font-weight: 700; }
+        .filigrane {
+            position: fixed; top: 40%; left: 8%;
+            font-size: 72px; font-weight: 700; color: rgba(28, 25, 23, 0.12);
+            transform: rotate(-28deg); letter-spacing: 0.2em;
+        }
+    </style>
+</head>
+<body>
+{% if brouillon %}
+    <div class="filigrane">BROUILLON</div>
+{% endif %}
+
+<table class="entete">
+    <tr>
+        <td>
+            <h1>{{ entreprise.raisonSociale }}</h1>
+            <p class="meta">
+                {{ entreprise.formeJuridique }}<br>
+                {{ entreprise.adresse.enUneLigne }}<br>
+                {% if entreprise.telephone %}{{ entreprise.telephone }}{% endif %}
+                {% if entreprise.email %} · {{ entreprise.email }}{% endif %}<br>
+                {% if entreprise.siret %}SIRET {{ entreprise.siret }}{% endif %}
+                {% if entreprise.codeApe %} · APE {{ entreprise.codeApe }}{% endif %}
+                {% if entreprise.numeroTvaIntracom %}<br>TVA {{ entreprise.numeroTvaIntracom }}{% endif %}
+            </p>
+        </td>
+        <td class="numero">
+            <strong>{{ document.type.libelle }}</strong>
+            <span>{{ document.numero }}</span>
+            <p class="meta">
+                Émis le {{ document.dateEmission|date('d/m/Y') }}
+                {% if document.dateEcheance %}<br>Échéance {{ document.dateEcheance|date('d/m/Y') }}{% endif %}
+            </p>
+        </td>
+    </tr>
+</table>
+
+<table class="parties">
+    <tr>
+        <td>
+            <div class="carte">
+                <h2>Client — facturation</h2>
+                <p><strong>{{ document.client.nomAffichage }}</strong></p>
+                <p>{{ document.client.adresseFacturation.enUneLigne }}</p>
+                {% if document.client.siret %}<p>SIRET {{ document.client.siret }}</p>{% endif %}
+            </div>
+        </td>
+        <td>
+            <div class="carte">
+                <h2>Adresse du chantier</h2>
+                {% if document.chantier %}
+                    <p><strong>{{ document.chantier.libelle }}</strong></p>
+                    <p>{{ document.chantier.adresse.enUneLigne }}</p>
+                {% else %}
+                    <p>Identique à l'adresse de facturation.</p>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+</table>
+
+{% if document.objet %}<p style="margin-bottom: 10px;"><strong>Objet :</strong> {{ document.objet }}</p>{% endif %}
+
+<table class="lignes">
+    <thead>
+        <tr>
+            <th>Désignation</th>
+            <th class="nombre">Qté</th>
+            <th>Unité</th>
+            <th class="nombre">PU HT</th>
+            <th class="nombre">TVA</th>
+            <th class="nombre">Total HT</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ligne in document.lignes %}
+        {% if ligne.type.value == 'TEXTE' %}
+            <tr class="titre-section">
+                <td colspan="6">{{ ligne.libelle|nl2br }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td>{{ ligne.libelle|nl2br }}</td>
+                <td class="nombre">{{ ligne.quantite }}</td>
+                <td>{{ ligne.unite.libelle }}</td>
+                <td class="nombre">{{ ligne.prixUnitaireHt }} €</td>
+                <td class="nombre">{{ ligne.tauxTva.libelle }}</td>
+                <td class="nombre">{{ ligne.montantHt }} €</td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+
+<table class="totaux">
+    <tr>
+        <td></td>
+        <td class="nombre" style="width: 42%;">Total HT</td>
+        <td class="nombre" style="width: 18%;">{{ document.montantHt }} €</td>
+    </tr>
+    {% for panier in document.ventilationTva %}
+        <tr>
+            <td></td>
+            <td class="nombre">TVA {{ panier.taux.libelle }} <span style="color:#78716c;">(base {{ panier.ht }} €)</span></td>
+            <td class="nombre">{{ panier.tva }} €</td>
+        </tr>
+    {% endfor %}
+    <tr class="net">
+        <td></td>
+        <td class="nombre">Total TTC</td>
+        <td class="nombre">{{ document.montantTtc }} €</td>
+    </tr>
+</table>
+
+{% if mentionFranchise %}
+    <p class="franchise">TVA non applicable, art. 293 B du CGI</p>
+{% endif %}
+
+<div class="mentions">
+    <p>
+        <strong>Assurance décennale.</strong>
+        {{ entreprise.assureurNom|default('—') }}, contrat {{ entreprise.numeroContrat|default('—') }}.
+        Couverture : {{ entreprise.couvertureGeographique|default('—') }}.
+    </p>
+    <p>
+        <strong>Règlement.</strong>
+        {{ entreprise.conditionsReglement }}
+        IBAN {{ entreprise.iban|default('—') }} · BIC {{ entreprise.bic|default('—') }}
+        {% if entreprise.banque %}({{ entreprise.banque }}){% endif %}.
+    </p>
+    <p>
+        {{ entreprise.penalitesRetard }}
+        Indemnité forfaitaire pour frais de recouvrement : {{ entreprise.indemniteRecouvrement }} €.
+    </p>
+</div>
+</body>
+</html>
