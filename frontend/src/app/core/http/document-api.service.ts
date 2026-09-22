@@ -12,6 +12,8 @@ export interface CriteresDocuments {
   readonly enRetard?: boolean;
   readonly page: number;
   readonly parPage: number;
+  readonly triChamp?: string;
+  readonly triSens?: 'asc' | 'desc';
 }
 
 export interface PayloadDocument {
@@ -49,6 +51,9 @@ export class DocumentApiService {
     }
     if (criteres.enRetard) {
       parametres = parametres.set('enRetard', '1');
+    }
+    if (criteres.triChamp && criteres.triSens) {
+      parametres = parametres.set(`order[${criteres.triChamp}]`, criteres.triSens);
     }
 
     return this.http.get<CollectionHydra<DocumentDetail>>('/api/documents', { params: parametres });

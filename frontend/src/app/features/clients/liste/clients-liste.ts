@@ -98,6 +98,7 @@ export class ClientsListe {
 
     this.triChamp = tri.active;
     this.triSens = tri.direction;
+    this.page = 0;
     this.charger();
   }
 

@@ -1,7 +1,7 @@
 # CJA — Devis, facturation et suivi de chantier
 
 Application de gestion pour artisan du bâtiment : base clientèle, chantiers, fournisseurs,
-devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)**, le **Lot 2 (devis, prestations, PDF)**, le **Lot 3 (acomptes, solde, débours)** et le **Lot 4 (recherche, duplication, suivi)**.
+devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base clientèle)**, le **Lot 2 (devis, prestations, PDF)**, le **Lot 3 (acomptes, solde, débours)**, le **Lot 4 (recherche, duplication, suivi)** et le **Lot 5 (envoi par e-mail)**.
 
 - `api/` — Symfony 7.4 LTS + API Platform 4.4 (PHP 8.5)
 - `frontend/` — Angular 22 + Angular Material
@@ -15,33 +15,6 @@ PHP 8.4+, Composer, Node 20+, et un runtime Docker. Sur macOS sans Docker Deskto
 brew install composer symfony node colima docker docker-compose
 colima start
 ```
-
-## Ce que couvre le Lot 2
-
-- **Devis et factures** de prestation, avec lignes de texte (titres, descriptifs) et lignes chiffrées.
-- **Bibliothèque** `PREST-ML`, `PREST-M2`, `PREST-U`, `PREST-FORFAIT`, prix seulement indicatifs.
-- **TVA** par les codes `0` (0 %), `1` (5,5 %), `2` (10 %) et `3` (20 %). Les totaux sont recalculés côté serveur.
-- **Verrou** : passer un brouillon à « Envoyé » fige les lignes. Ensuite, seul le statut peut changer.
-- **PDF** via Gotenberg (`GOTENBERG_URL`, défaut `http://127.0.0.1:3000/`) : en-tête, décennale, IBAN, pénalités, indemnité de 40 €, mention « TVA non applicable, art. 293 B du CGI » si le régime est la franchise et qu'une ligne est à 0 %.
-- **Réglages** : fiche entreprise unique, valeurs d'exemple à remplacer dans l'application.
-
-## Ce que couvre le Lot 4
-
-- **Recherche** : le champ de la barre interroge `GET /api/recherche?q=` (au moins deux caractères) sur le nom du client, le numéro de pièce, le libellé d'une ligne et la commune du chantier.
-- **Duplication** : sur un devis, **Dupliquer** appelle `POST /api/documents/{id}/dupliquer` et ouvre un nouveau brouillon `DV…` aux mêmes lignes de texte et de prestation. Une facture ne se duplique pas.
-- **Tableau de bord** : page d'accueil, compteurs en nombre et en TTC pour les pièces envoyées, acceptées, payées, et celles dont l'échéance est dépassée. Le retard se filtre avec `enRetard=1`, sans changer le statut enregistré.
-- **Inaltérabilité** : le tableau signale une pièce déjà émise dont le verrou est absent.
-- **Export comptable** : `GET /api/exports/comptable?du=YYYY-MM-DD&au=YYYY-MM-DD` renvoie les factures de prestation et d'acompte déjà envoyées, avec une colonne de TVA par taux.
-- **E-mail** : **Envoyer** sur un devis, une facture ou une facture d'acompte ouvre un message déjà rempli (réglages de l'entreprise, jetons `{{client}}`, `{{numero}}`, `{{objet}}`, `{{montant}}`, `{{echeance}}`, `{{entreprise}}`), encore modifiable, avec le PDF en pièce jointe. L'expéditeur est l'e-mail de l'entreprise. En local, Mailpit reçoit les messages (`MAILER_DSN=smtp://127.0.0.1:1025` dans `api/.env.local`, boîte sur http://127.0.0.1:8025). `api/.env` reste sur `null://null` ; une vraie boîte (OVH, Gmail avec mot de passe d'application) se met dans `.env.local` au moment de l'envoi réel.
-
-## Ce que couvre le Lot 3
-
-- **Acompte** sur le devis, 30 % par défaut, modifiable tant que le devis est en brouillon. Le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA.
-- **Facture d'acompte** : une fois le devis accepté, un clic crée la pièce `FA…`. Une seconde facture d'acompte est refusée.
-- **Facture de solde** : reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`.
-- **Annexe de débours** : rattachée à un devis ou à une facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis.
-
-Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Facture d'acompte**. Après envoi de cet acompte, **Facture de solde**. **Annexe de débours** se crée depuis le devis ou la facture, puis se complète avec les fournisseurs.
 
 ## Démarrage
 
@@ -96,7 +69,7 @@ php bin/console app:user:create prenom@domaine.fr --admin
   Toutes les ressources métier sont fermées aux requêtes anonymes.
 - **Importation CSV / Excel** en trois temps, pour reprendre l'antériorité sans risque.
 
-## L'assistant d'importation
+### L'assistant d'importation
 
 Disponible dans l'application sous **Importation**, et exposé par l'API :
 
@@ -114,6 +87,36 @@ Deux fichiers d'exemple permettent de tester le parcours de bout en bout :
 
 L'import d'historique réserve aussi les séquences de numérotation : après la reprise d'une
 facture `FC2026-02-001`, la prochaine facture émise par l'application sera `FC2026-02-002`.
+
+## Ce que couvre le Lot 2
+
+- **Devis et factures** de prestation, avec lignes de texte (titres, descriptifs) et lignes chiffrées.
+- **Bibliothèque** `PREST-ML`, `PREST-M2`, `PREST-U`, `PREST-FORFAIT`, prix seulement indicatifs.
+- **TVA** par les codes `0` (0 %), `1` (5,5 %), `2` (10 %) et `3` (20 %). Les totaux sont recalculés côté serveur.
+- **Verrou** : passer un brouillon à « Envoyé » fige les lignes. Ensuite, seul le statut peut changer.
+- **PDF** via Gotenberg (`GOTENBERG_URL`, défaut `http://127.0.0.1:3000/`) : en-tête, décennale, IBAN, pénalités, indemnité de 40 €, mention « TVA non applicable, art. 293 B du CGI » si le régime est la franchise et qu'une ligne est à 0 %.
+- **Réglages** : fiche entreprise unique, valeurs d'exemple à remplacer dans l'application.
+
+## Ce que couvre le Lot 3
+
+- **Acompte** sur le devis, 30 % par défaut, modifiable tant que le devis est en brouillon. Le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA.
+- **Facture d'acompte** : une fois le devis accepté, un clic crée la pièce `FA…`. Une seconde facture d'acompte est refusée.
+- **Facture de solde** : reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`.
+- **Annexe de débours** : rattachée à un devis ou à une facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis.
+
+Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **Enregistrer**, **Marquer comme envoyé**, **Marquer comme accepté**, puis **Facture d'acompte**. Après envoi de cet acompte, **Facture de solde**. **Annexe de débours** se crée depuis le devis ou la facture, puis se complète avec les fournisseurs.
+
+## Ce que couvre le Lot 4
+
+- **Recherche** : le champ de la barre interroge `GET /api/recherche?q=` (au moins deux caractères) sur le nom du client, le numéro de pièce, le libellé d'une ligne et la commune du chantier. Dans la liste des documents, le champ filtre aussi le numéro, l'objet et le nom du client.
+- **Duplication** : sur un devis, **Dupliquer** appelle `POST /api/documents/{id}/dupliquer` et ouvre un nouveau brouillon `DV…` aux mêmes lignes de texte et de prestation. Une facture ne se duplique pas.
+- **Tableau de bord** : page d'accueil, compteurs en nombre et en TTC pour les pièces envoyées, acceptées, payées, et celles dont l'échéance est dépassée. Le retard se filtre avec `enRetard=1`, sans changer le statut enregistré.
+- **Inaltérabilité** : le tableau signale une pièce déjà émise dont le verrou est absent.
+- **Export comptable** : `GET /api/exports/comptable?du=YYYY-MM-DD&au=YYYY-MM-DD` renvoie les factures de prestation et d'acompte déjà envoyées, avec une colonne de TVA par taux.
+
+## Ce que couvre le Lot 5
+
+- **E-mail** : **Envoyer** sur un devis, une facture, une facture d'acompte ou une annexe de débours ouvre un message déjà rempli (réglages de l'entreprise, jetons `{{client}}`, `{{numero}}`, `{{objet}}`, `{{montant}}`, `{{echeance}}`, `{{entreprise}}`), encore modifiable, avec le PDF en pièce jointe. Les annexes de débours liées sont jointes par défaut et se décochent une à une. L'expéditeur est l'e-mail de l'entreprise. Un envoi réussi passe la pièce de brouillon à « Envoyé » et la verrouille. En local, Mailpit reçoit les messages (`MAILER_DSN=smtp://127.0.0.1:1025` dans `api/.env.local`, boîte sur http://127.0.0.1:8025). `api/.env` reste sur `null://null` ; une vraie boîte (OVH, Gmail avec mot de passe d'application) se met dans `.env.local` au moment de l'envoi réel.
 
 ## Tests
 

@@ -64,7 +64,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     description: 'Recherche partielle sur la commune, insensible a la casse.',
 )]
 #[ApiFilter(BooleanFilter::class, properties: ['actif'])]
-#[ApiFilter(OrderFilter::class, properties: ['nom', 'createdAt'])]
+#[ApiFilter(OrderFilter::class, properties: ['nom', 'contactNom', 'adresse.ville', 'siteWeb', 'createdAt'])]
 #[UniqueEntity(fields: ['nom'], message: 'Un fournisseur porte deja ce nom.')]
 class Fournisseur
 {

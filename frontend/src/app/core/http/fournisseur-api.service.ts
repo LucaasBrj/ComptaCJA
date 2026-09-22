@@ -8,6 +8,8 @@ export interface CriteresFournisseurs {
   readonly nom?: string;
   readonly page: number;
   readonly parPage: number;
+  readonly triChamp?: string;
+  readonly triSens?: 'asc' | 'desc';
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,6 +23,9 @@ export class FournisseurApiService {
 
     if (criteres.nom) {
       parametres = parametres.set('nom', criteres.nom);
+    }
+    if (criteres.triChamp && criteres.triSens) {
+      parametres = parametres.set(`order[${criteres.triChamp}]`, criteres.triSens);
     }
 
     return this.http.get<CollectionHydra<Fournisseur>>('/api/fournisseurs', { params: parametres });

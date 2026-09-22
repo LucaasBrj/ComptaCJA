@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
@@ -26,6 +27,7 @@ import { FournisseurDialog } from '../dialog/fournisseur-dialog';
     FormsModule,
     MatCardModule,
     MatTableModule,
+    MatSortModule,
     MatPaginatorModule,
     MatFormFieldModule,
     MatInputModule,
@@ -51,6 +53,8 @@ export class FournisseursListe {
   protected recherche = '';
   protected page = 0;
   protected parPage = 25;
+  private triChamp = '';
+  private triSens: 'asc' | 'desc' = 'asc';
 
   private readonly rechercheSaisie = new Subject<string>();
 
@@ -70,6 +74,17 @@ export class FournisseursListe {
 
   protected surSaisieRecherche(terme: string): void {
     this.rechercheSaisie.next(terme);
+  }
+
+  protected surTri(tri: Sort): void {
+    if (tri.direction === '') {
+      return;
+    }
+
+    this.triChamp = tri.active;
+    this.triSens = tri.direction;
+    this.page = 0;
+    this.charger();
   }
 
   protected surPagination(evenement: PageEvent): void {
@@ -124,7 +139,13 @@ export class FournisseursListe {
     this.chargement.set(true);
 
     this.api
-      .lister({ nom: this.recherche || undefined, page: this.page, parPage: this.parPage })
+      .lister({
+        nom: this.recherche || undefined,
+        page: this.page,
+        parPage: this.parPage,
+        triChamp: this.triChamp || undefined,
+        triSens: this.triChamp ? this.triSens : undefined,
+      })
       .subscribe({
         next: (collection) => {
           this.fournisseurs.set(collection.member);
