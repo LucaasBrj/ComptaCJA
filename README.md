@@ -5,7 +5,7 @@ devis et factures. Ce dépôt contient le **socle technique**, le **Lot 1 (base 
 
 - `api/` — Symfony 7.4 LTS + API Platform 4.4 (PHP 8.5)
 - `frontend/` — Angular 22 + Angular Material
-- `docker-compose.yml` — PostgreSQL 17, Gotenberg 8 (PDF, branché au Lot 2), Adminer
+- `docker-compose.yml` — PostgreSQL 17, Gotenberg 8 (PDF), Mailpit (e-mails locaux), Adminer
 
 ## Prérequis
 
@@ -32,6 +32,7 @@ colima start
 - **Tableau de bord** : page d'accueil, compteurs en nombre et en TTC pour les pièces envoyées, acceptées, payées, et celles dont l'échéance est dépassée. Le retard se filtre avec `enRetard=1`, sans changer le statut enregistré.
 - **Inaltérabilité** : le tableau signale une pièce déjà émise dont le verrou est absent.
 - **Export comptable** : `GET /api/exports/comptable?du=YYYY-MM-DD&au=YYYY-MM-DD` renvoie les factures de prestation et d'acompte déjà envoyées, avec une colonne de TVA par taux.
+- **E-mail** : **Envoyer** sur un devis, une facture ou une facture d'acompte ouvre un message déjà rempli (réglages de l'entreprise, jetons `{{client}}`, `{{numero}}`, `{{objet}}`, `{{montant}}`, `{{echeance}}`, `{{entreprise}}`), encore modifiable, avec le PDF en pièce jointe. L'expéditeur est l'e-mail de l'entreprise. En local, Mailpit reçoit les messages (`MAILER_DSN=smtp://127.0.0.1:1025` dans `api/.env.local`, boîte sur http://127.0.0.1:8025). `api/.env` reste sur `null://null` ; une vraie boîte (OVH, Gmail avec mot de passe d'application) se met dans `.env.local` au moment de l'envoi réel.
 
 ## Ce que couvre le Lot 3
 
@@ -70,6 +71,7 @@ Le serveur de développement Angular relaie `/api` vers `http://127.0.0.1:8000`
 | Application | http://localhost:4200 |
 | Documentation de l'API | http://127.0.0.1:8000/api |
 | Adminer (base) | http://localhost:8081 — serveur `database`, user/pass/base `cja` |
+| Mailpit (e-mails) | http://127.0.0.1:8025 |
 
 ### Compte de démonstration
 
@@ -122,4 +124,4 @@ cd api && php bin/phpunit
 Les tests repartent d'un schéma vierge à chaque cas et couvrent le refus d'accès sans
 jeton, la numérotation séquentielle, la validation du SIRET, les filtres de recherche,
 l'assistant d'importation, le calcul de TVA, le PDF, les acomptes, la recherche, la
-duplication, l'export comptable et le retard.
+duplication, l'export comptable, le retard et l'envoi par e-mail.

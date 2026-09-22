@@ -1,0 +1,26 @@
+.avertissement,
+.piece,
+.erreur {
+  margin: 0 0 0.75rem;
+}
+
+.avertissement {
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.erreur {
+  color: var(--mat-sys-error);
+}
+
+.champs {
+  display: flex;
+  flex-direction: column;
+  min-width: min(32rem, 70vw);
+}
+
+.annexes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}

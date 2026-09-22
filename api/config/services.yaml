@@ -34,6 +34,11 @@ when@test:
             class: Symfony\Component\HttpClient\MockHttpClient
             arguments:
                 - '@App\Tests\Mock\ReponseGotenberg'
+        App\Tests\Mock\CollecteurMessages:
+            public: true
+        Symfony\Component\Mailer\MailerInterface:
+            alias: App\Tests\Mock\CollecteurMessages
+            public: true
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

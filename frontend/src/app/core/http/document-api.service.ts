@@ -86,6 +86,16 @@ export class DocumentApiService {
     return this.http.post<DocumentDetail>(`/api/documents/${id}/dupliquer`, null);
   }
 
+  envoyerEmail(
+    id: string,
+    message: { destinataire: string; sujet: string; corps: string; annexes: readonly string[] },
+  ): Observable<string> {
+    return this.http.post(`/api/documents/${id}/envoyer-email`, message, {
+      headers: { 'Content-Type': 'application/json' },
+      responseType: 'text',
+    });
+  }
+
   pdf(id: string): Observable<Blob> {
     return this.http.get(`/api/documents/${id}/pdf`, {
       responseType: 'blob',

@@ -108,4 +108,29 @@
       <textarea matInput rows="2" formControlName="penalitesRetard"></textarea>
     </mat-form-field>
   </mat-card>
+
+  <mat-card>
+    <h2>E-mails</h2>
+    <p class="aide" ngNonBindable>
+      Sujet et message proposés à l'envoi d'un devis ou d'une facture. Jetons :
+      {{client}}, {{numero}}, {{objet}}, {{montant}}, {{echeance}}, {{entreprise}}.
+      Ils sont remplacés à l'ouverture, et le texte reste modifiable avant l'envoi.
+    </p>
+    <mat-form-field class="plein">
+      <mat-label>Sujet du devis</mat-label>
+      <input matInput formControlName="modeleDevisSujet" />
+    </mat-form-field>
+    <mat-form-field class="plein">
+      <mat-label>Message du devis</mat-label>
+      <textarea matInput rows="6" formControlName="modeleDevisCorps"></textarea>
+    </mat-form-field>
+    <mat-form-field class="plein">
+      <mat-label>Sujet de la facture</mat-label>
+      <input matInput formControlName="modeleFactureSujet" />
+    </mat-form-field>
+    <mat-form-field class="plein">
+      <mat-label>Message de la facture</mat-label>
+      <textarea matInput rows="6" formControlName="modeleFactureCorps"></textarea>
+    </mat-form-field>
+  </mat-card>
 </form>
