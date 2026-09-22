@@ -70,13 +70,13 @@ class Fournisseur
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME, unique: true)]
-    #[Groups(['fournisseur:read'])]
+    #[Groups(['fournisseur:read', 'document:item'])]
     private Uuid $id;
 
     #[ORM\Column(length: 180)]
     #[Assert\NotBlank(message: 'Le nom du fournisseur est obligatoire.')]
     #[Assert\Length(max: 180)]
-    #[Groups(['fournisseur:read', 'fournisseur:write'])]
+    #[Groups(['fournisseur:read', 'fournisseur:write', 'document:item'])]
     private ?string $nom = null;
 
     #[ORM\Column(length: 120, nullable: true)]

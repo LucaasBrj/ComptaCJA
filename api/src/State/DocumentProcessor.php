@@ -145,6 +145,10 @@ final class DocumentProcessor implements ProcessorInterface
             return true;
         }
 
+        if ((string) $document->getTauxAcompte() !== (string) ($original['tauxAcompte'] ?? '30.00')) {
+            return true;
+        }
+
         if ($this->identifiant($document->getClient()) !== $this->identifiant($original['client'] ?? null)) {
             return true;
         }

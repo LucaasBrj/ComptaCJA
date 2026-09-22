@@ -25,6 +25,24 @@
         PDF
       </button>
     }
+    @if (lectureSeule() && formulaire.controls.type.value === 'DEVIS' && statut() === 'ENVOYE') {
+      <button matButton="filled" type="button" (click)="accepter()" [disabled]="enregistrement()">
+        Marquer comme accepté
+      </button>
+    }
+    @if (lectureSeule() && formulaire.controls.type.value === 'DEVIS' && statut() === 'ACCEPTE') {
+      <button matButton="outlined" type="button" (click)="creerAcompte()" [disabled]="enregistrement()">
+        Facture d'acompte
+      </button>
+      <button matButton="filled" type="button" (click)="creerSolde()" [disabled]="enregistrement()">
+        Facture de solde
+      </button>
+    }
+    @if (id() && !legacy() && (formulaire.controls.type.value === 'DEVIS' || formulaire.controls.type.value === 'FACTURE')) {
+      <button matButton="outlined" type="button" (click)="creerAnnexe()" [disabled]="enregistrement()">
+        Annexe de débours
+      </button>
+    }
     @if (!lectureSeule()) {
       <button matButton="outlined" type="button" (click)="enregistrer(false)" [disabled]="enregistrement()">
         Enregistrer
@@ -48,6 +66,12 @@
         <mat-select formControlName="type">
           <mat-option value="DEVIS">Devis</mat-option>
           <mat-option value="FACTURE">Facture</mat-option>
+          @if (formulaire.controls.type.value === 'FACTURE_ACOMPTE') {
+            <mat-option value="FACTURE_ACOMPTE">Facture d'acompte</mat-option>
+          }
+          @if (formulaire.controls.type.value === 'ANNEXE_DEBOURS') {
+            <mat-option value="ANNEXE_DEBOURS">Annexe de débours</mat-option>
+          }
         </mat-select>
       </mat-form-field>
 
@@ -87,6 +111,13 @@
         </mat-select>
       </mat-form-field>
 
+      @if (formulaire.controls.type.value === 'DEVIS') {
+        <mat-form-field>
+          <mat-label>Acompte (%)</mat-label>
+          <input matInput formControlName="tauxAcompte" inputmode="decimal" />
+        </mat-form-field>
+      }
+
       <mat-form-field>
         <mat-label>Objet</mat-label>
         <input matInput formControlName="objet" />
@@ -115,22 +146,67 @@
           <mat-icon>drag_indicator</mat-icon>
         </button>
 
-        @if (ligne.controls['type'].value === 'TEXTE') {
+        @if (ligne.controls['type'].value === 'DEBOURS') {
+          <div class="ligne__champs">
+            <mat-form-field>
+              <mat-label>Fournisseur</mat-label>
+              <mat-select formControlName="fournisseur">
+                @for (fournisseur of fournisseurs(); track fournisseur.id) {
+                  <mat-option [value]="fournisseur['@id']">{{ fournisseur.nom }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field class="ligne__libelle">
+              <mat-label>Matériaux</mat-label>
+              <textarea matInput rows="2" formControlName="libelle"></textarea>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Qté</mat-label>
+              <input matInput formControlName="quantite" inputmode="decimal" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Unité</mat-label>
+              <mat-select formControlName="unite">
+                @for (unite of unites; track unite.valeur) {
+                  <mat-option [value]="unite.valeur">{{ unite.libelle }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>Montant HT</mat-label>
+              <input matInput formControlName="prixUnitaireHt" inputmode="decimal" />
+            </mat-form-field>
+            <mat-form-field>
+              <mat-label>TVA (0, 1, 2, 3)</mat-label>
+              <input
+                matInput
+                maxlength="1"
+                [value]="ligne.controls['tauxTva'].value"
+                (input)="appliquerCodeTva($index, $event)"
+              />
+              <mat-hint>{{ libelleTaux(ligne.controls['tauxTva'].value) }}</mat-hint>
+            </mat-form-field>
+          </div>
+        } @else if (ligne.controls['type'].value === 'TEXTE') {
           <mat-form-field class="ligne__texte">
             <mat-label>Titre ou descriptif</mat-label>
             <textarea matInput rows="2" formControlName="libelle"></textarea>
           </mat-form-field>
         } @else {
           <div class="ligne__champs">
-            <mat-form-field>
-              <mat-label>Prestation</mat-label>
-              <mat-select (selectionChange)="appliquerPrestation($index, $event.value)">
-                <mat-option [value]="null">Saisie libre</mat-option>
-                @for (prestation of prestations(); track prestation.id) {
-                  <mat-option [value]="prestation">{{ prestation.code }} — {{ prestation.libelle }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+            @if (ligne.controls['type'].value === 'DEDUCTION') {
+              <p class="ligne__nature">Déduction d'acompte</p>
+            } @else {
+              <mat-form-field>
+                <mat-label>Prestation</mat-label>
+                <mat-select (selectionChange)="appliquerPrestation($index, $event.value)">
+                  <mat-option [value]="null">Saisie libre</mat-option>
+                  @for (prestation of prestations(); track prestation.id) {
+                    <mat-option [value]="prestation">{{ prestation.code }} — {{ prestation.libelle }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
             <mat-form-field class="ligne__libelle">
               <mat-label>Libellé</mat-label>
               <textarea matInput rows="2" formControlName="libelle"></textarea>
@@ -175,6 +251,12 @@
 
   @if (!lectureSeule()) {
     <div class="ajout">
+      @if (formulaire.controls.type.value === 'ANNEXE_DEBOURS') {
+        <button matButton="outlined" type="button" (click)="ajouterLigne('DEBOURS')">
+          <mat-icon>add</mat-icon>
+          Ligne de débours
+        </button>
+      } @else {
       <button matButton="outlined" type="button" (click)="ajouterLigne('PRESTATION')">
         <mat-icon>add</mat-icon>
         Ligne chiffrée
@@ -183,6 +265,7 @@
         <mat-icon>title</mat-icon>
         Ligne de texte
       </button>
+      }
     </div>
   }
 
@@ -196,6 +279,12 @@
     <p class="totaux__net">
       <span>Total TTC</span><strong>{{ totaux().ttc | currency: 'EUR' }}</strong>
     </p>
+    @if (formulaire.controls.type.value === 'DEVIS') {
+      <p>
+        <span>Acompte {{ libelleAcompte() }} %</span>
+        <strong>{{ apercuAcompte() | currency: 'EUR' }}</strong>
+      </p>
+    }
     @if (mentionFranchise()) {
       <p class="totaux__mention">TVA non applicable, art. 293 B du CGI</p>
     }

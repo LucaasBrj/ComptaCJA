@@ -89,6 +89,12 @@
   }
 }
 
+.ligne__nature {
+  margin: 0;
+  align-self: center;
+  font: var(--mat-sys-title-small);
+}
+
 .mono {
   margin-left: 0.5rem;
   color: var(--mat-sys-on-surface-variant);

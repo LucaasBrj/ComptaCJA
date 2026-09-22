@@ -21,6 +21,7 @@ export interface PayloadDocument {
   objet: string | null;
   client: string;
   chantier: string | null;
+  tauxAcompte?: string;
   lignes: LigneDocument[];
 }
 
@@ -63,6 +64,18 @@ export class DocumentApiService {
     return this.http.patch<DocumentDetail>(`/api/documents/${id}`, payload, {
       headers: { 'Content-Type': 'application/merge-patch+json' },
     });
+  }
+
+  factureAcompte(id: string): Observable<DocumentDetail> {
+    return this.http.post<DocumentDetail>(`/api/documents/${id}/facture-acompte`, null);
+  }
+
+  factureSolde(id: string): Observable<DocumentDetail> {
+    return this.http.post<DocumentDetail>(`/api/documents/${id}/facture-solde`, null);
+  }
+
+  annexeDebours(id: string): Observable<DocumentDetail> {
+    return this.http.post<DocumentDetail>(`/api/documents/${id}/annexe-debours`, null);
   }
 
   pdf(id: string): Observable<Blob> {

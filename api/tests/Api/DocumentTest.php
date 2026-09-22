@@ -193,6 +193,134 @@ final class DocumentTest extends ApiTestCase
         self::assertStringNotContainsString('TVA non applicable, art. 293 B du CGI', $htmlAssujetti);
     }
 
+    public function testLAcompteAuProrataPuisLeSolde(): void
+    {
+        $http = $this->clientAuthentifie();
+        $devis = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'DEVIS',
+                'dateEmission' => '2026-09-15',
+                'tauxAcompte' => '30.00',
+                'client' => $this->creerClient($http),
+                'lignes' => [
+                    [
+                        'type' => 'PRESTATION',
+                        'libelle' => 'Neuf',
+                        'unite' => 'FORFAIT',
+                        'quantite' => '1',
+                        'prixUnitaireHt' => '100.00',
+                        'tauxTva' => '3',
+                    ],
+                    [
+                        'type' => 'PRESTATION',
+                        'libelle' => 'Renovation',
+                        'unite' => 'FORFAIT',
+                        'quantite' => '1',
+                        'prixUnitaireHt' => '100.00',
+                        'tauxTva' => '2',
+                    ],
+                ],
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('230.00', $devis['montantTtc']);
+
+        $html = $this->rendre($devis['id']);
+        self::assertStringContainsString('Acompte de 30 % à verser à la signature du devis : 69,00 €.', $html);
+
+        $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
+        self::assertResponseStatusCodeSame(422);
+
+        $http->request('PATCH', '/api/documents/'.$devis['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['statut' => 'ENVOYE'],
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
+        self::assertResponseStatusCodeSame(422);
+
+        $http->request('PATCH', '/api/documents/'.$devis['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['statut' => 'ACCEPTE'],
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $acompte = $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte')->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('FACTURE_ACOMPTE', $acompte['type']);
+        self::assertMatchesRegularExpression('/^FA\d{4}-\d{2}-\d{3}$/', $acompte['numero']);
+        self::assertSame('69.00', $acompte['montantTtc']);
+        self::assertCount(2, $acompte['lignes']);
+
+        $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
+        self::assertResponseStatusCodeSame(422);
+
+        $http->request('PATCH', '/api/documents/'.$acompte['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['statut' => 'ENVOYE'],
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $solde = $http->request('POST', '/api/documents/'.$devis['id'].'/facture-solde')->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('FACTURE', $solde['type']);
+        self::assertMatchesRegularExpression('/^FC\d{4}-\d{2}-\d{3}$/', $solde['numero']);
+        self::assertSame('161.00', $solde['montantTtc']);
+        self::assertStringStartsWith('Solde du devis', (string) $solde['objet']);
+
+        $deductions = array_values(array_filter(
+            $solde['lignes'],
+            static fn (array $ligne): bool => 'DEDUCTION' === $ligne['type'],
+        ));
+        self::assertCount(2, $deductions);
+        self::assertSame('-30.00', $deductions[0]['montantHt']);
+
+        $http->request('POST', '/api/documents/'.$devis['id'].'/facture-solde');
+        self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testLAnnexeDeDeboursPorteLaMentionLegale(): void
+    {
+        $http = $this->clientAuthentifie();
+        $devis = $this->creerPiece($http, $this->creerClient($http), 'DEVIS', '2026-09-15');
+        $fournisseur = $http->request('POST', '/api/fournisseurs', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => ['nom' => 'BigMat'],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+
+        $annexe = $http->request('POST', '/api/documents/'.$devis['id'].'/annexe-debours')->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('ANNEXE_DEBOURS', $annexe['type']);
+        self::assertMatchesRegularExpression('/^AD\d{4}-\d{2}-\d{3}$/', $annexe['numero']);
+
+        $http->request('PATCH', '/api/documents/'.$annexe['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => [
+                'lignes' => [[
+                    'type' => 'DEBOURS',
+                    'libelle' => 'Carrelage',
+                    'unite' => 'M2',
+                    'quantite' => '4',
+                    'prixUnitaireHt' => '25.00',
+                    'tauxTva' => '3',
+                    'fournisseur' => $fournisseur['@id'],
+                ]],
+            ],
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $html = $this->rendre($annexe['id']);
+        self::assertStringContainsString('Annexe au devis '.$devis['numero'], $html);
+        self::assertStringContainsString('BigMat', $html);
+        self::assertStringContainsString(
+            'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.',
+            $html,
+        );
+    }
+
     public function testLePdfEstRenvoyeParLeControleur(): void
     {
         $http = $this->clientAuthentifie();

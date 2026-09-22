@@ -15,12 +15,13 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
-import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
+import { Observable, Subject, debounceTime, distinctUntilChanged, skip, switchMap } from 'rxjs';
 import { ClientApiService } from '../../../core/http/client-api.service';
 import { DocumentApiService, PayloadDocument } from '../../../core/http/document-api.service';
 import { EntrepriseApiService } from '../../../core/http/entreprise-api.service';
+import { FournisseurApiService } from '../../../core/http/fournisseur-api.service';
 import { PrestationApiService } from '../../../core/http/prestation-api.service';
-import { appliquerViolations, erreurServeur } from '../../../core/http/violation';
+import { appliquerViolations, erreurServeur, messageErreur } from '../../../core/http/violation';
 import { identifiantDepuisIri } from '../../../core/iri';
 import { Chantier, Client, LIBELLES_STATUT_DOCUMENT, TypeDocument } from '../../../core/models/client.model';
 import {
@@ -35,7 +36,9 @@ import {
   UNITES,
   UnitePrestation,
   calculerTotaux,
+  montantAcompte,
 } from '../../../core/models/document.model';
+import { Fournisseur } from '../../../core/models/fournisseur.model';
 import { NotificationService } from '../../../core/notification.service';
 
 @Component({
@@ -64,6 +67,7 @@ export class DocumentEditeur implements OnInit {
   private readonly api = inject(DocumentApiService);
   private readonly clientsApi = inject(ClientApiService);
   private readonly prestationsApi = inject(PrestationApiService);
+  private readonly fournisseursApi = inject(FournisseurApiService);
   private readonly entrepriseApi = inject(EntrepriseApiService);
   private readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
@@ -78,11 +82,13 @@ export class DocumentEditeur implements OnInit {
   protected readonly chargement = signal(false);
   protected readonly enregistrement = signal(false);
   protected readonly lectureSeule = signal(false);
+  protected readonly legacy = signal(false);
   protected readonly numero = signal<string | null>(null);
   protected readonly statut = signal<string>('BROUILLON');
   protected readonly clientsTrouves = signal<readonly Client[]>([]);
   protected readonly chantiers = signal<readonly Chantier[]>([]);
   protected readonly prestations = signal<readonly Prestation[]>([]);
+  protected readonly fournisseurs = signal<readonly Fournisseur[]>([]);
   protected readonly franchise = signal(false);
   protected readonly totaux = signal<TotauxDocument>({ ht: 0, tva: 0, ttc: 0, ventilation: [] });
 
@@ -94,6 +100,7 @@ export class DocumentEditeur implements OnInit {
     dateEmission: this.fb.control<Date | null>(new Date(), Validators.required),
     dateEcheance: this.fb.control<Date | null>(null),
     objet: this.fb.control<string | null>(null),
+    tauxAcompte: this.fb.nonNullable.control('30'),
     client: this.fb.control<string | null>(null, Validators.required),
     chantier: this.fb.control<string | null>(null),
     lignes: this.fb.array<FormGroup>([]),
@@ -111,6 +118,15 @@ export class DocumentEditeur implements OnInit {
       .subscribe((page) => this.clientsTrouves.set(page.member));
 
     this.prestationsApi.lister().subscribe((page) => this.prestations.set(page.member));
+    this.fournisseursApi
+      .lister({ page: 0, parPage: 100 })
+      .subscribe((page) => this.fournisseurs.set(page.member));
+    this.route.paramMap.pipe(skip(1), takeUntilDestroyed()).subscribe((params) => {
+      const identifiant = params.get('id');
+      if (identifiant) {
+        this.charger(identifiant);
+      }
+    });
     this.entrepriseApi.lire().subscribe((entreprise) => {
       this.franchise.set(entreprise.regimeTva === 'FRANCHISE_293B');
     });
@@ -197,6 +213,48 @@ export class DocumentEditeur implements OnInit {
     }
   }
 
+  protected apercuAcompte(): number {
+    return montantAcompte(this.totaux().ventilation, this.formulaire.controls.tauxAcompte.value);
+  }
+
+  protected libelleAcompte(): string {
+    const nombre = Number(this.formulaire.controls.tauxAcompte.value.replace(',', '.'));
+
+    return Number.isFinite(nombre) ? String(nombre).replace('.', ',') : this.formulaire.controls.tauxAcompte.value;
+  }
+
+  protected accepter(): void {
+    const identifiant = this.id();
+    if (!identifiant) {
+      return;
+    }
+
+    this.enregistrement.set(true);
+    this.api.modifier(identifiant, { statut: 'ACCEPTE' }).subscribe({
+      next: (document) => {
+        this.enregistrement.set(false);
+        this.notifications.succes('Devis accepté.');
+        this.appliquerDocument(document);
+      },
+      error: (erreur: HttpErrorResponse) => {
+        this.enregistrement.set(false);
+        this.notifications.erreur(messageErreur(erreur));
+      },
+    });
+  }
+
+  protected creerAcompte(): void {
+    this.generer(this.api.factureAcompte(this.id() ?? ''), 'Facture d\'acompte créée.');
+  }
+
+  protected creerSolde(): void {
+    this.generer(this.api.factureSolde(this.id() ?? ''), 'Facture de solde créée.');
+  }
+
+  protected creerAnnexe(): void {
+    this.generer(this.api.annexeDebours(this.id() ?? ''), 'Annexe de débours créée.');
+  }
+
   protected libelleTaux(code: string | null): string {
     return TAUX_TVA.find((item) => item.code === code)?.libelle ?? '';
   }
@@ -257,7 +315,30 @@ export class DocumentEditeur implements OnInit {
     });
   }
 
+  private generer(requete: Observable<DocumentDetail>, message: string): void {
+    if (!this.id() || this.enregistrement()) {
+      return;
+    }
+
+    this.enregistrement.set(true);
+    requete.subscribe({
+      next: (document) => {
+        this.enregistrement.set(false);
+        this.notifications.succes(message);
+        void this.router.navigate(['/documents', identifiantDepuisIri(document)]);
+      },
+      error: (erreur: HttpErrorResponse) => {
+        this.enregistrement.set(false);
+        this.notifications.erreur(messageErreur(erreur));
+      },
+    });
+  }
+
   private charger(id: string): void {
+    this.formulaire.enable({ emitEvent: false });
+    this.rechercheClient.enable({ emitEvent: false });
+    this.lectureSeule.set(false);
+    this.legacy.set(false);
     this.chargement.set(true);
     this.api.lire(id).subscribe({
       next: (document) => {
@@ -271,6 +352,7 @@ export class DocumentEditeur implements OnInit {
   private appliquerDocument(document: DocumentDetail): void {
     this.numero.set(document.numero ?? null);
     this.statut.set(document.statut);
+    this.legacy.set(document.legacy);
     this.lectureSeule.set(document.verrouille || document.legacy);
     const client = document.client as ResumeClient;
     this.rechercheClient.setValue(client.nomAffichage ?? '', { emitEvent: false });
@@ -279,6 +361,7 @@ export class DocumentEditeur implements OnInit {
       dateEmission: document.dateEmission ? this.dateLocale(document.dateEmission) : null,
       dateEcheance: document.dateEcheance ? this.dateLocale(document.dateEcheance) : null,
       objet: document.objet,
+      tauxAcompte: document.tauxAcompte ?? '30.00',
       client: typeof document.client === 'string' ? document.client : (client['@id'] ?? null),
       chantier:
         document.chantier && typeof document.chantier !== 'string'
@@ -311,13 +394,18 @@ export class DocumentEditeur implements OnInit {
     return this.fb.group({
       type: this.fb.nonNullable.control(type),
       libelle: this.fb.control(ligne?.libelle ?? '', Validators.required),
-      unite: this.fb.control<UnitePrestation | null>(ligne?.unite ?? (type === 'PRESTATION' ? 'M2' : null)),
-      quantite: this.fb.control(ligne?.quantite ?? (type === 'PRESTATION' ? '1' : null)),
+      unite: this.fb.control<UnitePrestation | null>(
+        ligne?.unite ?? (type === 'PRESTATION' ? 'M2' : type === 'DEBOURS' ? 'U' : type === 'DEDUCTION' ? 'FORFAIT' : null),
+      ),
+      quantite: this.fb.control(ligne?.quantite ?? (type === 'TEXTE' ? null : '1')),
       prixUnitaireHt: this.fb.control(ligne?.prixUnitaireHt ?? null),
-      tauxTva: this.fb.control<TauxTva | null>(ligne?.tauxTva ?? (type === 'PRESTATION' ? '2' : null)),
+      tauxTva: this.fb.control<TauxTva | null>(
+        ligne?.tauxTva ?? (type === 'PRESTATION' || type === 'DEBOURS' ? '2' : null),
+      ),
       prestation: this.fb.control<string | null>(
         typeof ligne?.prestation === 'string' ? ligne.prestation : null,
       ),
+      fournisseur: this.fb.control<string | null>(this.iriFournisseur(ligne)),
     });
   }
 
@@ -330,16 +418,19 @@ export class DocumentEditeur implements OnInit {
       dateEmission: this.formaterDate(valeurs.dateEmission),
       dateEcheance: valeurs.dateEcheance ? this.formaterDate(valeurs.dateEcheance) : null,
       objet: valeurs.objet,
+      tauxAcompte: this.decimal(valeurs.tauxAcompte) ?? '30.00',
       client: valeurs.client ?? '',
       chantier: valeurs.chantier,
       lignes: valeurs.lignes.map((ligne) => ({
         type: ligne['type'] as TypeLigne,
         libelle: (ligne['libelle'] as string) ?? '',
-        unite: ligne['type'] === 'PRESTATION' ? (ligne['unite'] as UnitePrestation) : null,
-        quantite: ligne['type'] === 'PRESTATION' ? this.decimal(ligne['quantite']) : null,
-        prixUnitaireHt: ligne['type'] === 'PRESTATION' ? this.decimal(ligne['prixUnitaireHt']) : null,
-        tauxTva: ligne['type'] === 'PRESTATION' ? (ligne['tauxTva'] as TauxTva) : null,
+        unite: ligne['type'] === 'TEXTE' ? null : (ligne['unite'] as UnitePrestation),
+        quantite: ligne['type'] === 'TEXTE' ? null : this.decimal(ligne['quantite']),
+        prixUnitaireHt: ligne['type'] === 'TEXTE' ? null : this.decimal(ligne['prixUnitaireHt']),
+        tauxTva:
+          ligne['type'] === 'TEXTE' ? null : (ligne['tauxTva'] as TauxTva),
         prestation: (ligne['prestation'] as string | null) ?? null,
+        fournisseur: ligne['type'] === 'DEBOURS' ? (ligne['fournisseur'] as string | null) : null,
       })),
     };
   }
@@ -371,6 +462,16 @@ export class DocumentEditeur implements OnInit {
     const jour = `${date.getDate()}`.padStart(2, '0');
 
     return `${date.getFullYear()}-${mois}-${jour}`;
+  }
+
+  private iriFournisseur(ligne?: LigneDocument): string | null {
+    const fournisseur = ligne?.fournisseur;
+
+    if (!fournisseur) {
+      return null;
+    }
+
+    return typeof fournisseur === 'string' ? fournisseur : (fournisseur['@id'] ?? null);
   }
 
   private decimal(valeur: unknown): string | null {

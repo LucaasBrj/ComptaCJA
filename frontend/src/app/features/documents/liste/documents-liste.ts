@@ -52,7 +52,12 @@ export class DocumentsListe {
   protected readonly chargement = signal(false);
   protected readonly libellesType = LIBELLES_TYPE_DOCUMENT;
   protected readonly libellesStatut = LIBELLES_STATUT_DOCUMENT;
-  protected readonly types: readonly TypeDocument[] = ['DEVIS', 'FACTURE'];
+  protected readonly types: readonly TypeDocument[] = [
+    'DEVIS',
+    'FACTURE',
+    'FACTURE_ACOMPTE',
+    'ANNEXE_DEBOURS',
+  ];
   protected readonly statuts = Object.keys(LIBELLES_STATUT_DOCUMENT) as StatutDocument[];
 
   protected recherche = '';
