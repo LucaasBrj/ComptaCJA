@@ -116,7 +116,7 @@ Parcours : **Documents → Nouveau devis**, saisir l'acompte et les lignes, **En
 
 ## Ce que couvre le Lot 5
 
-- **E-mail** : **Envoyer** sur un devis, une facture, une facture d'acompte ou une annexe de débours ouvre un message déjà rempli (réglages de l'entreprise, jetons `{{client}}`, `{{numero}}`, `{{objet}}`, `{{montant}}`, `{{echeance}}`, `{{entreprise}}`), encore modifiable, avec le PDF en pièce jointe. Les annexes de débours liées sont jointes par défaut et se décochent une à une. L'expéditeur est l'e-mail de l'entreprise. Un envoi réussi passe la pièce de brouillon à « Envoyé » et la verrouille. En local, Mailpit reçoit les messages (`MAILER_DSN=smtp://127.0.0.1:1025` dans `api/.env.local`, boîte sur http://127.0.0.1:8025). `api/.env` reste sur `null://null` ; une vraie boîte (OVH, Gmail avec mot de passe d'application) se met dans `.env.local` au moment de l'envoi réel.
+- **E-mail** : **Envoyer** sur un devis, une facture, une facture d'acompte ou une annexe de débours ouvre un message déjà rempli (réglages de l'entreprise, jetons `{{client}}`, `{{numero}}`, `{{objet}}`, `{{montant}}`, `{{echeance}}`, `{{entreprise}}`, `{{debours}}`), encore modifiable, avec le PDF en pièce jointe. Les annexes de débours liées sont jointes par défaut et se décochent une à une. L'expéditeur est l'e-mail de l'entreprise. Un envoi réussi passe la pièce de brouillon à « Envoyé » et la verrouille. En local, Mailpit reçoit les messages (`MAILER_DSN=smtp://127.0.0.1:1025` dans `api/.env.local`, boîte sur http://127.0.0.1:8025). `api/.env` reste sur `null://null` ; une vraie boîte (OVH, Gmail avec mot de passe d'application) se met dans `.env.local` au moment de l'envoi réel.
 
 ## Tests
 

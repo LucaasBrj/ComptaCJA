@@ -109,13 +109,14 @@ final class EnvoiEmailTest extends ApiTestCase
 
         $devis = $this->creerDevis($http, $client);
         $annexe = $this->creerAnnexe($http, $client, $devis);
+        $ignoree = $this->creerAnnexe($http, $client, $devis);
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/envoyer-email', [
             'headers' => ['Content-Type' => 'application/json'],
             'json' => [
                 'destinataire' => 'lea@example.com',
                 'sujet' => 'Devis et annexe',
-                'corps' => 'Deux pieces jointes.',
+                'corps' => "Deux pieces jointes.\n{{debours}}",
                 'annexes' => [$annexe['id']],
             ],
         ]);
@@ -127,6 +128,15 @@ final class EnvoiEmailTest extends ApiTestCase
         self::assertInstanceOf(Email::class, $message);
         $noms = array_map(static fn ($piece) => $piece->getFilename(), $message->getAttachments());
         self::assertSame([$devis['numero'].'.pdf', $annexe['numero'].'.pdf'], $noms);
+        $corps = $message->getTextBody() ?? '';
+        self::assertStringContainsString('Annexe de débours jointe :', $corps);
+        self::assertStringContainsString($annexe['numero'].' : 0,00 €', $corps);
+        self::assertStringContainsString(
+            'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.',
+            $corps,
+        );
+        self::assertStringNotContainsString((string) $ignoree['numero'], $corps);
+        self::assertStringNotContainsString('{{debours}}', $corps);
 
         $devisRelu = $http->request('GET', '/api/documents/'.$devis['id'])->toArray();
         $annexeRelue = $http->request('GET', '/api/documents/'.$annexe['id'])->toArray();
@@ -143,7 +153,7 @@ final class EnvoiEmailTest extends ApiTestCase
             'json' => [
                 'destinataire' => 'lea@example.com',
                 'sujet' => 'Sans annexe',
-                'corps' => 'Une seule piece.',
+                'corps' => "Une seule piece.\n{{debours}}",
             ],
         ]);
         self::assertResponseStatusCodeSame(204);
@@ -152,6 +162,9 @@ final class EnvoiEmailTest extends ApiTestCase
         $seul = $collecteur->messages[array_key_last($collecteur->messages)];
         self::assertInstanceOf(Email::class, $seul);
         self::assertCount(1, $seul->getAttachments());
+        $corpsSeul = $seul->getTextBody() ?? '';
+        self::assertStringNotContainsString('{{debours}}', $corpsSeul);
+        self::assertStringNotContainsString('auprès de chaque fournisseur', $corpsSeul);
         $annexeLaisee = $http->request('GET', '/api/documents/'.$annexeAutre['id'])->toArray();
         self::assertSame('BROUILLON', $annexeLaisee['statut']);
         self::assertFalse($annexeLaisee['verrouille']);

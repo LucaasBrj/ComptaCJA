@@ -54,13 +54,12 @@ final class EnvoiDocumentParEmail
             $this->rejeter("Renseignez l'email de l'entreprise dans les reglages avant d'envoyer une piece.", 'destinataire');
         }
 
-        $sujet = trim($this->remplissage->remplir($envoi->sujet, $document, $entreprise));
-        $corps = $this->remplissage->remplir($envoi->corps, $document, $entreprise);
+        $annexes = $this->annexesDemandees($document, $envoi->annexes);
+        $sujet = trim($this->remplissage->remplir($envoi->sujet, $document, $entreprise, $annexes));
+        $corps = $this->remplissage->remplir($envoi->corps, $document, $entreprise, $annexes);
         if ('' === $sujet || '' === trim($corps)) {
             $this->rejeter('Le sujet et le message doivent rester renseignes apres remplacement des jetons.', 'sujet');
         }
-
-        $annexes = $this->annexesDemandees($document, $envoi->annexes);
         $numero = $document->getNumero();
 
         $this->entityManager->wrapInTransaction(function () use ($document, $annexes, $expediteur, $envoi, $sujet, $corps, $numero): void {

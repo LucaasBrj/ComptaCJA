@@ -42,7 +42,7 @@ import {
 } from '../../../core/models/document.model';
 import { Fournisseur } from '../../../core/models/fournisseur.model';
 import { NotificationService } from '../../../core/notification.service';
-import { EnvoiEmailDialog } from './envoi-email-dialog';
+import { EnvoiEmailDialog, texteDebours } from './envoi-email-dialog';
 
 @Component({
   selector: 'app-document-editeur',
@@ -227,7 +227,11 @@ export class DocumentEditeur implements OnInit {
                 ? []
                 : this.piecesLiees()
                     .filter((piece) => piece.type === 'ANNEXE_DEBOURS' && piece.numero)
-                    .map((piece) => ({ id: piece.id, numero: piece.numero ?? '' })),
+                    .map((piece) => ({
+                      id: piece.id,
+                      numero: piece.numero ?? '',
+                      montantTtc: piece.montantTtc,
+                    })),
           },
           width: '36rem',
         });
@@ -671,6 +675,11 @@ export class DocumentEditeur implements OnInit {
       ),
       echeance: echeance ? new Intl.DateTimeFormat('fr-FR').format(echeance) : '',
       entreprise: this.raisonSociale(),
+      debours: texteDebours(
+        this.piecesLiees()
+          .filter((piece) => piece.type === 'ANNEXE_DEBOURS' && piece.numero)
+          .map((piece) => ({ numero: piece.numero ?? '', montantTtc: piece.montantTtc })),
+      ),
     };
 
     return modele.replace(/\{\{(\w+)\}\}/g, (_jeton, cle: string) => valeurs[cle] ?? '');

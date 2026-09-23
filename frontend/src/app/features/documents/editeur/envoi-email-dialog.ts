@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -12,6 +13,24 @@ import { messageErreur } from '../../../core/http/violation';
 export interface AnnexeAJoindre {
   readonly id: string;
   readonly numero: string;
+  readonly montantTtc: string;
+}
+
+const MENTION_DEBOURS =
+  'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.';
+
+export function texteDebours(annexes: readonly Pick<AnnexeAJoindre, 'numero' | 'montantTtc'>[]): string {
+  if (annexes.length === 0) {
+    return '';
+  }
+
+  const lignes = annexes.map(
+    (annexe) =>
+      `${annexe.numero} : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(annexe.montantTtc))}`,
+  );
+  const titre = annexes.length === 1 ? 'Annexe de débours jointe :' : 'Annexes de débours jointes :';
+
+  return `${titre}\n${lignes.join('\n')}\n${MENTION_DEBOURS}`;
 }
 
 export interface DonneesEnvoiEmail {
@@ -55,6 +74,22 @@ export class EnvoiEmailDialog {
   protected readonly annexesCochees = this.fb.nonNullable.array(
     this.donnees.annexes.map(() => this.fb.nonNullable.control(true)),
   );
+
+  private paragrapheDebours = texteDebours(this.donnees.annexes);
+
+  constructor() {
+    this.annexesCochees.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.ajusterDebours());
+  }
+
+  private ajusterDebours(): void {
+    const cochees = this.donnees.annexes.filter((_, index) => this.annexesCochees.at(index).value);
+    const suivant = texteDebours(cochees);
+    const corps = this.formulaire.controls.corps.value;
+    if (this.paragrapheDebours !== '' && corps.includes(this.paragrapheDebours)) {
+      this.formulaire.controls.corps.setValue(corps.replace(this.paragrapheDebours, suivant));
+      this.paragrapheDebours = suivant;
+    }
+  }
 
   protected fermer(): void {
     this.dialogRef.close(false);
