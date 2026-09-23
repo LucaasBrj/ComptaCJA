@@ -228,6 +228,10 @@ final class DocumentTest extends ApiTestCase
 
         $html = $this->rendre($devis['id']);
         self::assertStringContainsString('Acompte de 30 % à verser à la signature du devis : 69,00 €.', $html);
+        self::assertStringContainsString('Devis à retourner signé', $html);
+        self::assertStringNotContainsString('accompagné du règlement', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
+        self::assertStringContainsString('Signature :', $html);
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
         self::assertResponseStatusCodeSame(422);
@@ -279,6 +283,92 @@ final class DocumentTest extends ApiTestCase
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/facture-solde');
         self::assertResponseStatusCodeSame(422);
+    }
+
+    public function testUnDevisSansAcompteNaffichePasLaMentionEtRefuseLaFactureDAcompte(): void
+    {
+        $http = $this->clientAuthentifie();
+        $client = $this->creerClient($http);
+        $devis = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'DEVIS',
+                'dateEmission' => '2026-09-15',
+                'tauxAcompte' => '0',
+                'client' => $client,
+                'lignes' => [[
+                    'type' => 'PRESTATION',
+                    'libelle' => 'Pose',
+                    'unite' => 'FORFAIT',
+                    'quantite' => '1',
+                    'prixUnitaireHt' => '100.00',
+                    'tauxTva' => '2',
+                ]],
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('0.00', $devis['tauxAcompte']);
+
+        $vide = $http->request('POST', '/api/documents', [
+            'headers' => ['Content-Type' => 'application/ld+json'],
+            'json' => [
+                'type' => 'DEVIS',
+                'dateEmission' => '2026-09-15',
+                'tauxAcompte' => '',
+                'client' => $client,
+                'lignes' => [[
+                    'type' => 'PRESTATION',
+                    'libelle' => 'Pose',
+                    'unite' => 'FORFAIT',
+                    'quantite' => '1',
+                    'prixUnitaireHt' => '100.00',
+                    'tauxTva' => '2',
+                ]],
+            ],
+        ])->toArray();
+        self::assertResponseStatusCodeSame(201);
+        self::assertSame('0.00', $vide['tauxAcompte']);
+
+        $html = $this->rendre($devis['id']);
+        self::assertStringNotContainsString('à verser à la signature', $html);
+        self::assertStringContainsString('Devis à retourner signé', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
+
+        $http->request('PATCH', '/api/documents/'.$devis['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['statut' => 'ENVOYE'],
+        ]);
+        self::assertResponseIsSuccessful();
+        $http->request('PATCH', '/api/documents/'.$devis['id'], [
+            'headers' => ['Content-Type' => 'application/merge-patch+json'],
+            'json' => ['statut' => 'ACCEPTE'],
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
+        self::assertResponseStatusCodeSame(422);
+        self::assertStringContainsString('aucun montant', (string) $http->getResponse()->getContent(false));
+
+        foreach (['-1', '100.01'] as $taux) {
+            $http->request('POST', '/api/documents', [
+                'headers' => ['Content-Type' => 'application/ld+json'],
+                'json' => [
+                    'type' => 'DEVIS',
+                    'dateEmission' => '2026-09-15',
+                    'tauxAcompte' => $taux,
+                    'client' => $client,
+                    'lignes' => [[
+                        'type' => 'PRESTATION',
+                        'libelle' => 'Pose',
+                        'unite' => 'FORFAIT',
+                        'quantite' => '1',
+                        'prixUnitaireHt' => '100.00',
+                        'tauxTva' => '2',
+                    ]],
+                ],
+            ]);
+            self::assertResponseStatusCodeSame(422);
+        }
     }
 
     public function testLAnnexeExigeUneSourceValideEtFigee(): void
@@ -413,6 +503,9 @@ final class DocumentTest extends ApiTestCase
             'Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement.',
             $html,
         );
+        self::assertStringContainsString('Devis à retourner signé accompagné du règlement', $html);
+        self::assertStringContainsString('Bon pour accord, accepté le :', $html);
+        self::assertStringContainsString('Signature :', $html);
     }
 
     public function testLaRechercheRetrouveLeNomDuClient(): void

@@ -35,7 +35,7 @@
         <button matButton="outlined" type="button" (click)="ouvrirPiece(acompte)">
           Voir facture d'acompte
         </button>
-      } @else {
+      } @else if (aAcompte()) {
         <button matButton="outlined" type="button" (click)="creerAcompte()" [disabled]="enregistrement()">
           Générer une facture d'acompte
         </button>
@@ -153,6 +153,7 @@
         <mat-form-field>
           <mat-label>Acompte (%)</mat-label>
           <input matInput formControlName="tauxAcompte" inputmode="decimal" />
+          <mat-hint>0 ou vide : pas d'acompte</mat-hint>
         </mat-form-field>
       }
 
@@ -317,7 +318,7 @@
     <p class="totaux__net">
       <span>Total TTC</span><strong>{{ totaux().ttc | currency: 'EUR' }}</strong>
     </p>
-    @if (formulaire.controls.type.value === 'DEVIS') {
+    @if (formulaire.controls.type.value === 'DEVIS' && aAcompte()) {
       <p>
         <span>Acompte {{ libelleAcompte() }} %</span>
         <strong>{{ apercuAcompte() | currency: 'EUR' }}</strong>

@@ -30,6 +30,9 @@
         .mentions { margin-top: 22px; color: #44403c; font-size: 10px; }
         .mentions p + p { margin-top: 6px; }
         .franchise, .acompte { margin-top: 12px; font-weight: 700; }
+        .accord { margin-top: 18px; }
+        .accord p + p { margin-top: 10px; }
+        .signature { margin-top: 28px; min-height: 48px; }
         .filigrane {
             position: fixed; top: 40%; left: 8%;
             font-size: 72px; font-weight: 700; color: rgba(28, 25, 23, 0.12);
@@ -157,6 +160,20 @@
 
 {% if mentionFranchise %}
     <p class="franchise">TVA non applicable, art. 293 B du CGI</p>
+{% endif %}
+
+{% if document.type.value == 'DEVIS' or document.type.value == 'ANNEXE_DEBOURS' %}
+    <div class="accord">
+        <p><strong>
+            {% if document.type.value == 'ANNEXE_DEBOURS' %}
+                Devis à retourner signé accompagné du règlement
+            {% else %}
+                Devis à retourner signé
+            {% endif %}
+        </strong></p>
+        <p>Bon pour accord, accepté le :</p>
+        <p class="signature">Signature :</p>
+    </div>
 {% endif %}
 
 <div class="mentions">

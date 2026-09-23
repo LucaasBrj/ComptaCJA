@@ -99,7 +99,7 @@ facture `FC2026-02-001`, la prochaine facture émise par l'application sera `FC2
 
 ## Ce que couvre le Lot 3
 
-- **Acompte** sur le devis, 30 % par défaut, modifiable tant que le devis est en brouillon. Le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA.
+- **Acompte** sur le devis, 30 % par défaut, facultatif : 0 ou un champ vide signifie pas d'acompte. Modifiable tant que le devis est en brouillon. S'il y en a un, le PDF indique le montant à verser à la signature. Le calcul suit le HT de chaque taux de TVA. Sans acompte, seul le solde se génère.
 - **Facture d'acompte** : une fois le devis accepté, **Générer une facture d'acompte** crée la pièce `FA…`. Au retour sur le devis, le bouton devient **Voir facture d'acompte**.
 - **Facture de solde** : **Générer une facture de solde** reprend les lignes du devis et déduit les acomptes déjà envoyés. Numéro `FC…`. Au retour, **Voir facture de solde**.
 - **Annexe de débours** : **Générer une annexe de débours** ouvre un brouillon rattaché au devis ou à la facture, lignes par fournisseur, mention « Les matériaux seront à régler directement auprès de chaque fournisseur selon leur modalité de paiement. » Ses totaux ne s'ajoutent pas au devis. Les annexes enregistrées se rouvrent depuis la pièce d'origine.

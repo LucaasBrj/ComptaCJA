@@ -27,14 +27,15 @@ final class RenduDocumentHtml
     {
         $entreprise = $this->entreprises->trouverUnique() ?? new Entreprise();
         $estDevis = TypeDocument::DEVIS === $document->getType();
+        $avecAcompte = $estDevis && 1 === bccomp($document->getTauxAcompte(), '0', 2);
 
         return $this->twig->render('document/pdf.html.twig', [
             'document' => $document,
             'entreprise' => $entreprise,
             'mentionFranchise' => $this->mentions->franchiseApplicable($document, $entreprise),
             'brouillon' => !$document->isVerrouille(),
-            'libelleAcompte' => $estDevis ? $this->acompte->libelleTaux($document->getTauxAcompte()) : null,
-            'montantAcompte' => $estDevis ? $this->formaterMontant($this->acompte->montantTtc($document)) : null,
+            'libelleAcompte' => $avecAcompte ? $this->acompte->libelleTaux($document->getTauxAcompte()) : null,
+            'montantAcompte' => $avecAcompte ? $this->formaterMontant($this->acompte->montantTtc($document)) : null,
         ]);
     }
 

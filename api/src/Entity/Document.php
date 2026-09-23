@@ -273,9 +273,9 @@ class Document
         }
 
         if (TypeDocument::DEVIS === $this->type
-            && (1 !== bccomp($this->tauxAcompte, '0', 2) || 1 === bccomp($this->tauxAcompte, '100', 2))
+            && (-1 === bccomp($this->tauxAcompte, '0', 2) || 1 === bccomp($this->tauxAcompte, '100', 2))
         ) {
-            $contexte->buildViolation('Le taux d\'acompte doit etre superieur a 0 et inferieur ou egal a 100.')
+            $contexte->buildViolation('Le taux d\'acompte doit etre compris entre 0 et 100.')
                 ->atPath('tauxAcompte')
                 ->addViolation();
         }
@@ -433,7 +433,7 @@ class Document
 
     public function setTauxAcompte(?string $tauxAcompte): self
     {
-        $this->tauxAcompte = (null === $tauxAcompte || '' === $tauxAcompte) ? '30.00' : $tauxAcompte;
+        $this->tauxAcompte = (null === $tauxAcompte || '' === $tauxAcompte) ? '0.00' : $tauxAcompte;
 
         return $this;
     }
