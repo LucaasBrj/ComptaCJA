@@ -36,6 +36,10 @@ final class GenerateurPiecesLiees
         $this->exigerDevisAccepte($devis);
         $this->exigerAbsente($devis, TypeDocument::FACTURE_ACOMPTE, 'Une facture d\'acompte existe deja pour ce devis.');
 
+        if (1 !== bccomp($devis->getTauxAcompte(), '0', 2)) {
+            $this->rejeter('Ce devis n\'a pas d\'acompte.', 'tauxAcompte');
+        }
+
         $piece = $this->coquille(
             $devis,
             TypeDocument::FACTURE_ACOMPTE,

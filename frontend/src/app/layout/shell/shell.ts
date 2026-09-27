@@ -2,7 +2,6 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
@@ -31,7 +30,6 @@ interface EntreeMenu {
     MatListModule,
     MatButtonModule,
     MatMenuModule,
-    MatDividerModule,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',

@@ -115,15 +115,6 @@
 
 .tiroir {
   width: 15rem;
-  display: flex;
-  flex-direction: column;
-
-  &__note {
-    margin-top: auto;
-    padding: 1rem;
-    font: var(--mat-sys-body-small);
-    color: var(--mat-sys-on-surface-variant);
-  }
 }
 
 .contenu {

@@ -5,12 +5,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
@@ -24,7 +26,13 @@ import { FournisseurApiService } from '../../../core/http/fournisseur-api.servic
 import { PrestationApiService } from '../../../core/http/prestation-api.service';
 import { appliquerViolations, erreurServeur, messageErreur } from '../../../core/http/violation';
 import { identifiantDepuisIri } from '../../../core/iri';
-import { Chantier, Client, LIBELLES_STATUT_DOCUMENT, TypeDocument } from '../../../core/models/client.model';
+import {
+  Chantier,
+  Client,
+  LIBELLES_STATUT_DOCUMENT,
+  LIBELLES_TYPE_DOCUMENT,
+  TypeDocument,
+} from '../../../core/models/client.model';
 import {
   DocumentDetail,
   LigneDocument,
@@ -52,12 +60,14 @@ import { EnvoiEmailDialog, texteDebours } from './envoi-email-dialog';
     RouterLink,
     DragDropModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
     MatDialogModule,
     MatIconModule,
+    MatMenuModule,
     MatAutocompleteModule,
     MatDatepickerModule,
     MatNativeDateModule,
@@ -111,13 +121,18 @@ export class DocumentEditeur implements OnInit {
     dateEmission: this.fb.control<Date | null>(new Date(), Validators.required),
     dateEcheance: this.fb.control<Date | null>(null),
     objet: this.fb.control<string | null>(null),
-    tauxAcompte: this.fb.nonNullable.control('30'),
+    avecAcompte: this.fb.nonNullable.control(false),
+    tauxAcompte: this.fb.nonNullable.control('0'),
     client: this.fb.control<string | null>(null, Validators.required),
-    chantier: this.fb.control<string | null>(null),
+    chantier: this.fb.nonNullable.control(''),
     lignes: this.fb.array<FormGroup>([]),
   });
 
   constructor() {
+    this.formulaire.controls.tauxAcompte.disable({ emitEvent: false });
+    this.formulaire.controls.avecAcompte.valueChanges.pipe(takeUntilDestroyed()).subscribe((actif) => {
+      this.reglerChampAcompte(actif);
+    });
     this.formulaire.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.recalculer());
     this.rechercheClient$
       .pipe(
@@ -252,7 +267,7 @@ export class DocumentEditeur implements OnInit {
     this.nomClient.set(client.nomAffichage ?? '');
     this.emailClient.set(client.email);
     this.chantiers.set(client.chantiers ?? []);
-    this.formulaire.controls.chantier.setValue(null);
+    this.formulaire.controls.chantier.setValue('');
     if (!client.chantiers) {
       this.clientsApi.recuperer(identifiantDepuisIri(client)).subscribe((fiche) => {
         this.chantiers.set(fiche.chantiers ?? []);
@@ -288,16 +303,45 @@ export class DocumentEditeur implements OnInit {
     });
   }
 
-  protected appliquerCodeTva(index: number, evenement: Event): void {
-    const saisie = (evenement.target as HTMLInputElement).value.trim();
-    if (saisie === '0' || saisie === '1' || saisie === '2' || saisie === '3') {
-      this.lignes.at(index).controls['tauxTva'].setValue(saisie);
-      (evenement.target as HTMLInputElement).value = saisie;
+  protected raccourciTva(index: number, evenement: KeyboardEvent): void {
+    if (evenement.key !== '0' && evenement.key !== '1' && evenement.key !== '2' && evenement.key !== '3') {
+      return;
     }
+
+    this.lignes.at(index).controls['tauxTva'].setValue(evenement.key);
+    evenement.preventDefault();
+    evenement.stopPropagation();
   }
 
   protected aAcompte(): boolean {
-    const nombre = Number(this.formulaire.controls.tauxAcompte.value.replace(',', '.'));
+    return (
+      this.formulaire.controls.type.value === 'DEVIS' &&
+      this.formulaire.controls.avecAcompte.value &&
+      this.tauxPositif(this.formulaire.controls.tauxAcompte.value)
+    );
+  }
+
+  private reglerChampAcompte(actif: boolean): void {
+    if (this.lectureSeule()) {
+      return;
+    }
+
+    const taux = this.formulaire.controls.tauxAcompte;
+    if (actif) {
+      taux.enable({ emitEvent: false });
+    } else {
+      taux.disable({ emitEvent: false });
+    }
+  }
+
+  private afficherTaux(taux: string | null | undefined): string {
+    const nombre = Number(String(taux ?? '0').replace(',', '.'));
+
+    return Number.isFinite(nombre) ? String(nombre).replace('.', ',') : '0';
+  }
+
+  private tauxPositif(taux: string | null | undefined): boolean {
+    const nombre = Number(String(taux ?? '').replace(',', '.'));
 
     return Number.isFinite(nombre) && nombre > 0;
   }
@@ -307,9 +351,7 @@ export class DocumentEditeur implements OnInit {
   }
 
   protected libelleAcompte(): string {
-    const nombre = Number(this.formulaire.controls.tauxAcompte.value.replace(',', '.'));
-
-    return Number.isFinite(nombre) ? String(nombre).replace('.', ',') : this.formulaire.controls.tauxAcompte.value;
+    return this.afficherTaux(this.formulaire.controls.tauxAcompte.value);
   }
 
   protected accepter(): void {
@@ -336,17 +378,71 @@ export class DocumentEditeur implements OnInit {
     return this.piecesLiees().find((piece) => piece.type === type && piece.statut !== 'ANNULE');
   }
 
-  protected annexesDebours(): readonly PieceLiee[] {
+  protected piecesAffichees(): readonly PieceLiee[] {
     const type = this.formulaire.controls.type.value;
     if (type !== 'DEVIS' && type !== 'FACTURE') {
       return [];
     }
 
-    return this.piecesLiees().filter((piece) => piece.type === 'ANNEXE_DEBOURS');
+    return this.piecesLiees().filter(
+      (piece) => piece.type === 'FACTURE_ACOMPTE' || piece.type === 'FACTURE' || piece.type === 'ANNEXE_DEBOURS',
+    );
   }
 
-  protected ouvrirPiece(piece: PieceLiee): void {
-    void this.router.navigate(['/documents', piece.id]);
+  protected libellePiece(piece: PieceLiee): string {
+    if (piece.type === 'FACTURE') {
+      return 'Facture de solde';
+    }
+
+    return LIBELLES_TYPE_DOCUMENT[piece.type as TypeDocument] ?? piece.type ?? '';
+  }
+
+  protected classeStatut(): string {
+    switch (this.statut()) {
+      case 'ENVOYE':
+        return 'envoye';
+      case 'ACCEPTE':
+      case 'PAYE':
+        return 'accepte';
+      case 'REFUSE':
+      case 'ANNULE':
+        return 'refuse';
+      case 'EN_RETARD':
+        return 'retard';
+      default:
+        return 'brouillon';
+    }
+  }
+
+  protected peutPlus(): boolean {
+    if (this.numero()) {
+      return true;
+    }
+
+    if (!this.id() || this.legacy()) {
+      return false;
+    }
+
+    const type = this.formulaire.controls.type.value;
+
+    return type === 'DEVIS' || type === 'FACTURE';
+  }
+
+  protected confirmerEnvoi(): void {
+    const phrase = this.avertissementEnvoi();
+    if (!phrase) {
+      this.enregistrer(true);
+      return;
+    }
+
+    this.dialog
+      .open(ConfirmationVerrouDialog, { data: phrase })
+      .afterClosed()
+      .subscribe((confirme: boolean | undefined) => {
+        if (confirme) {
+          this.enregistrer(true);
+        }
+      });
   }
 
   protected creerAcompte(): void {
@@ -370,10 +466,6 @@ export class DocumentEditeur implements OnInit {
 
   protected dupliquer(): void {
     this.generer(this.api.dupliquer(this.id() ?? ''), 'Devis dupliqué.');
-  }
-
-  protected libelleTaux(code: string | null): string {
-    return TAUX_TVA.find((item) => item.code === code)?.libelle ?? '';
   }
 
   protected libelleStatut(statut: string): string {
@@ -482,14 +574,10 @@ export class DocumentEditeur implements OnInit {
       dateEmission: document.dateEmission ? this.dateLocale(document.dateEmission) : null,
       dateEcheance: document.dateEcheance ? this.dateLocale(document.dateEcheance) : null,
       objet: document.objet,
-      tauxAcompte: document.tauxAcompte ?? '30.00',
+      avecAcompte: this.tauxPositif(document.type === 'DEVIS' ? document.tauxAcompte : null),
+      tauxAcompte: this.afficherTaux(document.tauxAcompte),
       client: typeof document.client === 'string' ? document.client : (client['@id'] ?? null),
-      chantier:
-        document.chantier && typeof document.chantier !== 'string'
-          ? (document.chantier['@id'] ?? null)
-          : typeof document.chantier === 'string'
-            ? document.chantier
-            : null,
+      chantier: this.iriChantier(document),
     });
     this.lignes.clear();
     for (const ligne of document.lignes ?? []) {
@@ -505,6 +593,9 @@ export class DocumentEditeur implements OnInit {
     if (this.lectureSeule()) {
       this.formulaire.disable();
       this.rechercheClient.disable();
+    } else {
+      this.formulaire.controls.type.disable({ emitEvent: false });
+      this.reglerChampAcompte(this.formulaire.controls.avecAcompte.value);
     }
     this.recalculer();
   }
@@ -566,16 +657,16 @@ export class DocumentEditeur implements OnInit {
     });
   }
 
-  private iriChantier(document: DocumentDetail): string | null {
+  private iriChantier(document: DocumentDetail): string {
     if (!document.chantier) {
-      return null;
+      return '';
     }
 
     if (typeof document.chantier === 'string') {
       return document.chantier;
     }
 
-    return document.chantier['@id'] ?? null;
+    return document.chantier['@id'] ?? '';
   }
 
   private payload(envoyer: boolean): PayloadDocument {
@@ -587,9 +678,12 @@ export class DocumentEditeur implements OnInit {
       dateEmission: this.formaterDate(valeurs.dateEmission),
       dateEcheance: valeurs.dateEcheance ? this.formaterDate(valeurs.dateEcheance) : null,
       objet: valeurs.objet,
-      tauxAcompte: this.decimal(valeurs.tauxAcompte) ?? '0.00',
+      tauxAcompte:
+        valeurs.type === 'DEVIS' && !valeurs.avecAcompte
+          ? '0.00'
+          : (this.decimal(valeurs.tauxAcompte) ?? '0.00'),
       client: valeurs.client ?? '',
-      chantier: valeurs.chantier,
+      chantier: valeurs.chantier || null,
       ...(this.sourceAnnexe && !this.id() ? { documentSource: this.sourceAnnexe } : {}),
       lignes: valeurs.lignes.map((ligne) => ({
         type: ligne['type'] as TypeLigne,
@@ -692,4 +786,22 @@ export class DocumentEditeur implements OnInit {
 
     return String(valeur).replace(',', '.');
   }
+}
+
+@Component({
+  selector: 'app-confirmation-verrou',
+  imports: [MatDialogModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>Marquer comme envoyé</h2>
+    <mat-dialog-content>
+      <p>{{ phrase }}</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button matButton type="button" mat-dialog-close>Annuler</button>
+      <button matButton="filled" type="button" [mat-dialog-close]="true">Marquer comme envoyé</button>
+    </mat-dialog-actions>
+  `,
+})
+class ConfirmationVerrouDialog {
+  protected readonly phrase = inject<string>(MAT_DIALOG_DATA);
 }
