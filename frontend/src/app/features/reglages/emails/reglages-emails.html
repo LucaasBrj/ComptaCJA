@@ -1,0 +1,45 @@
+@if (chargement() || enregistrement()) {
+  <mat-progress-bar mode="indeterminate" />
+}
+
+<form [formGroup]="formulaire" class="page" (ngSubmit)="enregistrer()">
+  <div class="jetons">
+    @for (jeton of jetons; track jeton) {
+      <button type="button" class="jeton" (mousedown)="$event.preventDefault()" (click)="inserer(jeton)">
+        {{ libelleJeton(jeton) }}
+      </button>
+    }
+  </div>
+
+  <div class="colonnes">
+    <mat-card>
+      <h2>Devis</h2>
+      <mat-form-field class="plein">
+        <mat-label>Sujet</mat-label>
+        <input matInput name="modeleDevisSujet" formControlName="modeleDevisSujet" />
+      </mat-form-field>
+      <mat-form-field class="plein">
+        <mat-label>Message</mat-label>
+        <textarea matInput rows="8" name="modeleDevisCorps" formControlName="modeleDevisCorps"></textarea>
+      </mat-form-field>
+    </mat-card>
+
+    <mat-card>
+      <h2>Facture</h2>
+      <mat-form-field class="plein">
+        <mat-label>Sujet</mat-label>
+        <input matInput name="modeleFactureSujet" formControlName="modeleFactureSujet" />
+      </mat-form-field>
+      <mat-form-field class="plein">
+        <mat-label>Message</mat-label>
+        <textarea matInput rows="8" name="modeleFactureCorps" formControlName="modeleFactureCorps"></textarea>
+      </mat-form-field>
+    </mat-card>
+  </div>
+
+  @if (formulaire.dirty) {
+    <div class="barre">
+      <button matButton="filled" type="submit" [disabled]="enregistrement()">Enregistrer</button>
+    </div>
+  }
+</form>

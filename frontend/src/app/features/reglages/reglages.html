@@ -1,0 +1,15 @@
+<header class="entete">
+  <h1 class="entete__titre">Réglages</h1>
+  <nav mat-tab-nav-bar [tabPanel]="panneau">
+    <a mat-tab-link routerLink="entreprise" routerLinkActive #entreprise="routerLinkActive" [active]="entreprise.isActive">
+      Entreprise
+    </a>
+    <a mat-tab-link routerLink="emails" routerLinkActive #emails="routerLinkActive" [active]="emails.isActive">
+      E-mails
+    </a>
+  </nav>
+</header>
+
+<mat-tab-nav-panel #panneau>
+  <router-outlet />
+</mat-tab-nav-panel>

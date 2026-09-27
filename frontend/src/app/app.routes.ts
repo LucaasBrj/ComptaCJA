@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, inviteGuard } from './core/auth/auth.guard';
+import { confirmerAbandonReglages } from './features/reglages/confirmer-abandon';
 
 export const routes: Routes = [
   {
@@ -46,9 +47,24 @@ export const routes: Routes = [
       },
       {
         path: 'reglages',
-        title: 'Réglages - CJA',
-        loadComponent: () =>
-          import('./features/reglages/entreprise/reglages-entreprise').then((m) => m.ReglagesEntreprise),
+        loadComponent: () => import('./features/reglages/reglages').then((m) => m.Reglages),
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'entreprise' },
+          {
+            path: 'entreprise',
+            title: 'Entreprise - CJA',
+            canDeactivate: [confirmerAbandonReglages],
+            loadComponent: () =>
+              import('./features/reglages/entreprise/reglages-entreprise').then((m) => m.ReglagesEntreprise),
+          },
+          {
+            path: 'emails',
+            title: 'E-mails - CJA',
+            canDeactivate: [confirmerAbandonReglages],
+            loadComponent: () =>
+              import('./features/reglages/emails/reglages-emails').then((m) => m.ReglagesEmails),
+          },
+        ],
       },
       {
         path: 'clients',

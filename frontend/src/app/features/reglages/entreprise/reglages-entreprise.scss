@@ -1,48 +1,78 @@
-.entete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-
-  &__titre {
-    margin: 0;
-    font: var(--mat-sys-headline-small);
-  }
-
-  &__sous-titre {
-    margin: 0.25rem 0 0;
-    color: var(--mat-sys-on-surface-variant);
-  }
-}
-
 .page {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding-bottom: 2.5rem;
 }
 
 mat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
   padding: 1rem;
 }
 
 h2,
 h3 {
-  margin: 0 0 0.75rem;
+  margin: 0;
+  font: var(--mat-sys-title-medium);
 }
 
-.grille {
+h3 {
+  font: var(--mat-sys-title-small);
+}
+
+.groupe {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
+
+  &--duo {
+    grid-template-columns: repeat(3, minmax(12rem, 18rem));
+    justify-content: start;
+  }
+
+  &--trio {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.adresse__ligne {
+  grid-column: 1 / -1;
+}
+
+.adresse__ville {
+  grid-column: span 3;
+}
+
+.regime,
+.indemnite {
+  width: min(100%, 22rem);
 }
 
 .plein {
   width: 100%;
 }
 
-.aide {
-  margin: 0 0 0.75rem;
-  color: var(--mat-sys-on-surface-variant);
+.barre {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--mat-sys-surface-container);
+}
+
+@media (max-width: 720px) {
+  .groupe,
+  .groupe--duo,
+  .groupe--trio {
+    grid-template-columns: 1fr;
+  }
+
+  .adresse__ville {
+    grid-column: auto;
+  }
 }

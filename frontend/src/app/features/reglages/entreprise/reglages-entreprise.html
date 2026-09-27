@@ -1,23 +1,11 @@
-<header class="entete">
-  <div>
-    <h1 class="entete__titre">Réglages</h1>
-    <p class="entete__sous-titre">
-      Mentions légales imprimées sur les devis et factures. Les valeurs d'exemple sont fictives.
-    </p>
-  </div>
-  <button matButton="filled" type="button" (click)="enregistrer()" [disabled]="enregistrement()">
-    Enregistrer
-  </button>
-</header>
-
 @if (chargement() || enregistrement()) {
   <mat-progress-bar mode="indeterminate" />
 }
 
-<form [formGroup]="formulaire" class="page">
+<form [formGroup]="formulaire" class="page" (ngSubmit)="enregistrer()">
   <mat-card>
-    <h2>Entreprise</h2>
-    <div class="grille">
+    <h2>Identité</h2>
+    <div class="groupe">
       <mat-form-field>
         <mat-label>Raison sociale</mat-label>
         <input matInput formControlName="raisonSociale" />
@@ -37,17 +25,9 @@
         <mat-label>Code APE</mat-label>
         <input matInput formControlName="codeApe" />
       </mat-form-field>
-      <mat-form-field>
-        <mat-label>N° TVA intracommunautaire</mat-label>
-        <input matInput formControlName="numeroTvaIntracom" />
-      </mat-form-field>
-      <mat-form-field>
-        <mat-label>Régime de TVA</mat-label>
-        <mat-select formControlName="regimeTva">
-          <mat-option value="FRANCHISE_293B">Franchise en base (art. 293 B)</mat-option>
-          <mat-option value="ASSUJETTI">Assujetti à la TVA</mat-option>
-        </mat-select>
-      </mat-form-field>
+    </div>
+
+    <div class="groupe groupe--duo">
       <mat-form-field>
         <mat-label>Téléphone</mat-label>
         <input matInput formControlName="telephone" />
@@ -56,14 +36,52 @@
         <mat-label>Email</mat-label>
         <input matInput type="email" formControlName="email" />
       </mat-form-field>
+      <mat-form-field>
+        <mat-label>N° TVA intracommunautaire</mat-label>
+        <input matInput formControlName="numeroTvaIntracom" />
+      </mat-form-field>
     </div>
-    <h3>Adresse</h3>
-    <app-adresse-champs [groupe]="formulaire.controls.adresse" />
+
+    <div class="groupe adresse" formGroupName="adresse">
+      <mat-form-field class="adresse__ligne">
+        <mat-label>Adresse</mat-label>
+        <input matInput formControlName="ligne1" autocomplete="street-address" />
+      </mat-form-field>
+      <mat-form-field class="adresse__ligne">
+        <mat-label>Complément (bâtiment, étage…)</mat-label>
+        <input matInput formControlName="ligne2" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Code postal</mat-label>
+        <input matInput formControlName="codePostal" inputmode="numeric" maxlength="5" />
+        @if (formulaire.controls.adresse.controls['codePostal'].hasError('pattern')) {
+          <mat-error>5 chiffres attendus.</mat-error>
+        }
+        @if (erreurServeur(formulaire.controls.adresse.controls['codePostal']); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+      <mat-form-field class="adresse__ville">
+        <mat-label>Ville</mat-label>
+        <input matInput formControlName="ville" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field class="regime">
+      <mat-label>Régime de TVA</mat-label>
+      <mat-select formControlName="regimeTva">
+        <mat-option value="FRANCHISE_293B">Franchise en base (art. 293 B)</mat-option>
+        <mat-option value="ASSUJETTI">Assujetti à la TVA</mat-option>
+      </mat-select>
+      @if (formulaire.controls.regimeTva.value === 'FRANCHISE_293B') {
+        <mat-hint>En franchise, les PDF portent la mention de l'article 293 B.</mat-hint>
+      }
+    </mat-form-field>
   </mat-card>
 
   <mat-card>
-    <h2>Assurance décennale</h2>
-    <div class="grille">
+    <h2>Mentions du PDF</h2>
+    <div class="groupe groupe--trio">
       <mat-form-field>
         <mat-label>Assureur</mat-label>
         <input matInput formControlName="assureurNom" />
@@ -77,11 +95,8 @@
         <input matInput formControlName="couvertureGeographique" />
       </mat-form-field>
     </div>
-  </mat-card>
 
-  <mat-card>
-    <h2>Paiement</h2>
-    <div class="grille">
+    <div class="groupe groupe--trio">
       <mat-form-field>
         <mat-label>IBAN</mat-label>
         <input matInput formControlName="iban" />
@@ -94,11 +109,8 @@
         <mat-label>Banque</mat-label>
         <input matInput formControlName="banque" />
       </mat-form-field>
-      <mat-form-field>
-        <mat-label>Indemnité de recouvrement (€)</mat-label>
-        <input matInput formControlName="indemniteRecouvrement" />
-      </mat-form-field>
     </div>
+
     <mat-form-field class="plein">
       <mat-label>Conditions de règlement</mat-label>
       <textarea matInput rows="2" formControlName="conditionsReglement"></textarea>
@@ -107,30 +119,16 @@
       <mat-label>Pénalités de retard</mat-label>
       <textarea matInput rows="2" formControlName="penalitesRetard"></textarea>
     </mat-form-field>
+    <mat-form-field class="indemnite">
+      <mat-label>Indemnité de recouvrement</mat-label>
+      <input matInput formControlName="indemniteRecouvrement" inputmode="decimal" />
+      <span matTextSuffix>€</span>
+    </mat-form-field>
   </mat-card>
 
-  <mat-card>
-    <h2>E-mails</h2>
-    <p class="aide" ngNonBindable>
-      Sujet et message proposés à l'envoi d'un devis ou d'une facture. Jetons :
-      {{client}}, {{numero}}, {{objet}}, {{montant}}, {{echeance}}, {{entreprise}}, {{debours}}.
-      Ils sont remplacés à l'ouverture, et le texte reste modifiable avant l'envoi.
-    </p>
-    <mat-form-field class="plein">
-      <mat-label>Sujet du devis</mat-label>
-      <input matInput formControlName="modeleDevisSujet" />
-    </mat-form-field>
-    <mat-form-field class="plein">
-      <mat-label>Message du devis</mat-label>
-      <textarea matInput rows="6" formControlName="modeleDevisCorps"></textarea>
-    </mat-form-field>
-    <mat-form-field class="plein">
-      <mat-label>Sujet de la facture</mat-label>
-      <input matInput formControlName="modeleFactureSujet" />
-    </mat-form-field>
-    <mat-form-field class="plein">
-      <mat-label>Message de la facture</mat-label>
-      <textarea matInput rows="6" formControlName="modeleFactureCorps"></textarea>
-    </mat-form-field>
-  </mat-card>
+  @if (formulaire.dirty) {
+    <div class="barre">
+      <button matButton="filled" type="submit" [disabled]="enregistrement()">Enregistrer</button>
+    </div>
+  }
 </form>
