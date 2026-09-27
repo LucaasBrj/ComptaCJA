@@ -3,30 +3,29 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
 import { EntrepriseApiService } from '../../../core/http/entreprise-api.service';
 import { appliquerViolations, erreurServeur } from '../../../core/http/violation';
-import { RegimeTva } from '../../../core/models/document.model';
 import { Adresse } from '../../../core/models/client.model';
+import { RegimeTva } from '../../../core/models/document.model';
 import { NotificationService } from '../../../core/notification.service';
-import { AdresseChamps } from '../../../shared/adresse-champs/adresse-champs';
 import { groupeAdresse } from '../../../shared/adresse-champs/adresse-formulaire';
+import { demanderAbandon } from '../confirmer-abandon';
 
 @Component({
   selector: 'app-reglages-entreprise',
   imports: [
     ReactiveFormsModule,
-    AdresseChamps,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatIconModule,
     MatProgressBarModule,
   ],
   templateUrl: './reglages-entreprise.html',
@@ -36,6 +35,7 @@ export class ReglagesEntreprise {
   private readonly api = inject(EntrepriseApiService);
   private readonly fb = inject(FormBuilder);
   private readonly notifications = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly chargement = signal(true);
   protected readonly enregistrement = signal(false);
@@ -59,21 +59,25 @@ export class ReglagesEntreprise {
     banque: this.fb.control<string | null>(null),
     conditionsReglement: this.fb.control<string | null>(null),
     penalitesRetard: this.fb.control<string | null>(null),
-    indemniteRecouvrement: this.fb.nonNullable.control('40.00'),
-    modeleDevisSujet: this.fb.nonNullable.control('', Validators.required),
-    modeleDevisCorps: this.fb.nonNullable.control('', Validators.required),
-    modeleFactureSujet: this.fb.nonNullable.control('', Validators.required),
-    modeleFactureCorps: this.fb.nonNullable.control('', Validators.required),
+    indemniteRecouvrement: this.fb.nonNullable.control('40'),
   });
 
   constructor() {
     this.api.lire().subscribe({
       next: (entreprise) => {
-        this.formulaire.patchValue(entreprise);
+        this.formulaire.patchValue(
+          { ...entreprise, indemniteRecouvrement: this.afficherMontant(entreprise.indemniteRecouvrement) },
+          { emitEvent: false },
+        );
+        this.formulaire.markAsPristine();
         this.chargement.set(false);
       },
       error: () => this.chargement.set(false),
     });
+  }
+
+  confirmerDepart(): boolean | Observable<boolean> {
+    return demanderAbandon(this.dialog, this.formulaire.dirty);
   }
 
   protected enregistrer(): void {
@@ -84,15 +88,53 @@ export class ReglagesEntreprise {
 
     this.enregistrement.set(true);
     const valeurs = this.formulaire.getRawValue();
-    this.api.modifier({ ...valeurs, adresse: valeurs.adresse as Adresse }).subscribe({
-      next: () => {
-        this.enregistrement.set(false);
-        this.notifications.succes('Réglages enregistrés. Ils apparaîtront sur les prochains PDF.');
-      },
-      error: (erreur: HttpErrorResponse) => {
-        this.enregistrement.set(false);
-        appliquerViolations(erreur, this.formulaire);
-      },
-    });
+    this.api
+      .modifier({
+        raisonSociale: valeurs.raisonSociale,
+        formeJuridique: valeurs.formeJuridique,
+        siret: valeurs.siret,
+        codeApe: valeurs.codeApe,
+        numeroTvaIntracom: valeurs.numeroTvaIntracom,
+        telephone: valeurs.telephone,
+        email: valeurs.email,
+        adresse: valeurs.adresse as Adresse,
+        regimeTva: valeurs.regimeTva,
+        assureurNom: valeurs.assureurNom,
+        numeroContrat: valeurs.numeroContrat,
+        couvertureGeographique: valeurs.couvertureGeographique,
+        iban: valeurs.iban,
+        bic: valeurs.bic,
+        banque: valeurs.banque,
+        conditionsReglement: valeurs.conditionsReglement,
+        penalitesRetard: valeurs.penalitesRetard,
+        indemniteRecouvrement: this.decimal(valeurs.indemniteRecouvrement),
+      })
+      .subscribe({
+        next: (entreprise) => {
+          this.enregistrement.set(false);
+          this.formulaire.patchValue(
+            { indemniteRecouvrement: this.afficherMontant(entreprise.indemniteRecouvrement) },
+            { emitEvent: false },
+          );
+          this.formulaire.markAsPristine();
+          this.notifications.succes('Réglages enregistrés. Ils apparaîtront sur les prochains PDF.');
+        },
+        error: (erreur: HttpErrorResponse) => {
+          this.enregistrement.set(false);
+          appliquerViolations(erreur, this.formulaire);
+        },
+      });
+  }
+
+  private afficherMontant(valeur: string): string {
+    const nombre = Number(String(valeur).replace(',', '.'));
+
+    return Number.isFinite(nombre) ? String(nombre).replace('.', ',') : valeur;
+  }
+
+  private decimal(valeur: string): string {
+    const nombre = Number(valeur.replace(',', '.'));
+
+    return Number.isFinite(nombre) ? nombre.toFixed(2) : '0.00';
   }
 }

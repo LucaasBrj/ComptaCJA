@@ -1,0 +1,8 @@
+.entete {
+  margin-bottom: 1rem;
+
+  &__titre {
+    margin: 0 0 0.75rem;
+    font: var(--mat-sys-headline-small);
+  }
+}
