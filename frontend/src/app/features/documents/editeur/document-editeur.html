@@ -6,23 +6,19 @@
   <a matIconButton routerLink="/documents" aria-label="Retour à la liste">
     <mat-icon>arrow_back</mat-icon>
   </a>
-  <div>
+  <div class="entete__identite">
     <h1 class="entete__titre">
       {{ numero() ?? titreEntete() }}
     </h1>
-    <p class="entete__sous-titre">{{ libelleStatut(statut()) }}</p>
+    <span class="pastille" [class]="'pastille pastille--' + classeStatut()">{{ libelleStatut(statut()) }}</span>
   </div>
   <div class="entete__actions">
-    @if (id() && !formulaire.controls.type.disabled) {
-      <button matButton="outlined" type="button" (click)="telechargerPdf()" [disabled]="!numero()">
-        <mat-icon>picture_as_pdf</mat-icon>
-        PDF
+    @if (!lectureSeule()) {
+      <button matButton="outlined" type="button" (click)="enregistrer(false)" [disabled]="enregistrement()">
+        Enregistrer
       </button>
-    }
-    @if (numero() && lectureSeule()) {
-      <button matButton="outlined" type="button" (click)="telechargerPdf()">
-        <mat-icon>picture_as_pdf</mat-icon>
-        PDF
+      <button matButton="filled" type="button" (click)="confirmerEnvoi()" [disabled]="enregistrement()">
+        Marquer comme envoyé
       </button>
     }
     @if (lectureSeule() && formulaire.controls.type.value === 'DEVIS' && statut() === 'ENVOYE') {
@@ -31,48 +27,47 @@
       </button>
     }
     @if (lectureSeule() && formulaire.controls.type.value === 'DEVIS' && statut() === 'ACCEPTE') {
-      @if (pieceLiee('FACTURE_ACOMPTE'); as acompte) {
-        <button matButton="outlined" type="button" (click)="ouvrirPiece(acompte)">
-          Voir facture d'acompte
-        </button>
-      } @else if (aAcompte()) {
+      @if (aAcompte() && !pieceLiee('FACTURE_ACOMPTE')) {
         <button matButton="outlined" type="button" (click)="creerAcompte()" [disabled]="enregistrement()">
           Générer une facture d'acompte
         </button>
       }
-      @if (pieceLiee('FACTURE'); as solde) {
-        <button matButton="filled" type="button" (click)="ouvrirPiece(solde)">
-          Voir facture de solde
-        </button>
-      } @else {
+      @if (!pieceLiee('FACTURE')) {
         <button matButton="filled" type="button" (click)="creerSolde()" [disabled]="enregistrement()">
           Générer une facture de solde
         </button>
       }
     }
-    @if (peutEnvoyer()) {
+    @if (lectureSeule() && peutEnvoyer()) {
       <button matButton="outlined" type="button" (click)="ouvrirEnvoi()" [disabled]="enregistrement()">
         <mat-icon>mail</mat-icon>
         Envoyer
       </button>
     }
-    @if (id() && !legacy() && formulaire.controls.type.value === 'DEVIS') {
-      <button matButton="outlined" type="button" (click)="dupliquer()" [disabled]="enregistrement()">
-        Dupliquer
+    @if (peutPlus()) {
+      <button matButton="outlined" type="button" [matMenuTriggerFor]="menuPlus" [disabled]="enregistrement()">
+        Plus
       </button>
-    }
-    @if (id() && !legacy() && (formulaire.controls.type.value === 'DEVIS' || formulaire.controls.type.value === 'FACTURE')) {
-      <button matButton="outlined" type="button" (click)="creerAnnexe()" [disabled]="enregistrement()">
-        Générer une annexe de débours
-      </button>
-    }
-    @if (!lectureSeule()) {
-      <button matButton="outlined" type="button" (click)="enregistrer(false)" [disabled]="enregistrement()">
-        Enregistrer
-      </button>
-      <button matButton="filled" type="button" (click)="enregistrer(true)" [disabled]="enregistrement()">
-        Marquer comme envoyé
-      </button>
+      <mat-menu #menuPlus="matMenu">
+        @if (numero()) {
+          <button mat-menu-item type="button" (click)="telechargerPdf()">
+            <mat-icon>picture_as_pdf</mat-icon>
+            <span>PDF</span>
+          </button>
+        }
+        @if (id() && !legacy() && formulaire.controls.type.value === 'DEVIS') {
+          <button mat-menu-item type="button" (click)="dupliquer()">
+            <mat-icon>content_copy</mat-icon>
+            <span>Dupliquer</span>
+          </button>
+        }
+        @if (id() && !legacy() && (formulaire.controls.type.value === 'DEVIS' || formulaire.controls.type.value === 'FACTURE')) {
+          <button mat-menu-item type="button" (click)="creerAnnexe()">
+            <mat-icon>post_add</mat-icon>
+            <span>Générer une annexe de débours</span>
+          </button>
+        }
+      </mat-menu>
     }
   </div>
 </header>
@@ -81,15 +76,16 @@
   <mat-progress-bar mode="indeterminate" />
 }
 
-@if (annexesDebours().length) {
-  <mat-card class="bloc annexes">
-    <h2>Annexes de débours</h2>
+@if (piecesAffichees().length) {
+  <mat-card class="bloc liees">
+    <h2>Pièces liées</h2>
     <ul>
-      @for (annexe of annexesDebours(); track annexe.id) {
+      @for (piece of piecesAffichees(); track piece.id) {
         <li>
-          <a [routerLink]="['/documents', annexe.id]">{{ annexe.numero || 'Sans numéro' }}</a>
-          <span>{{ libelleStatut(annexe.statut) }}</span>
-          <span class="mono">{{ +annexe.montantTtc | currency: 'EUR' }}</span>
+          <span>{{ libellePiece(piece) }}</span>
+          <a [routerLink]="['/documents', piece.id]">{{ piece.numero || 'Sans numéro' }}</a>
+          <span>{{ libelleStatut(piece.statut) }}</span>
+          <span class="mono">{{ +piece.montantTtc | currency: 'EUR' }}</span>
         </li>
       }
     </ul>
@@ -97,8 +93,8 @@
 }
 
 <form class="editeur" [formGroup]="formulaire">
-  <mat-card class="bloc">
-    <div class="grille">
+  <mat-card class="bloc fiche">
+    <div class="groupe">
       <mat-form-field>
         <mat-label>Type</mat-label>
         <mat-select formControlName="type">
@@ -140,7 +136,7 @@
       <mat-form-field>
         <mat-label>Chantier</mat-label>
         <mat-select formControlName="chantier">
-          <mat-option [value]="null">Adresse de facturation</mat-option>
+          <mat-option value="">Adresse de facturation</mat-option>
           @for (chantier of chantiers(); track chantier.id) {
             <mat-option [value]="chantier['@id'] || '/api/chantiers/' + chantier.id">
               {{ chantier.libelleComplet || chantier.libelle }}
@@ -148,20 +144,27 @@
           }
         </mat-select>
       </mat-form-field>
+    </div>
 
-      @if (formulaire.controls.type.value === 'DEVIS') {
+    <mat-form-field class="fiche__objet">
+      <mat-label>Objet</mat-label>
+      <input matInput formControlName="objet" />
+    </mat-form-field>
+
+    @if (formulaire.controls.type.value === 'DEVIS') {
+      <div class="groupe groupe--suite">
+        <div class="groupe__choix">
+          <mat-checkbox formControlName="avecAcompte">Avec acompte</mat-checkbox>
+        </div>
         <mat-form-field>
-          <mat-label>Acompte (%)</mat-label>
+          <mat-label>Acompte</mat-label>
           <input matInput formControlName="tauxAcompte" inputmode="decimal" />
-          <mat-hint>0 ou vide : pas d'acompte</mat-hint>
+          <span matTextSuffix>%</span>
         </mat-form-field>
-      }
+      </div>
+    }
 
-      <mat-form-field>
-        <mat-label>Objet</mat-label>
-        <input matInput formControlName="objet" />
-      </mat-form-field>
-
+    <div class="groupe groupe--suite">
       <mat-form-field>
         <mat-label>Date d'émission</mat-label>
         <input matInput [matDatepicker]="emission" formControlName="dateEmission" />
@@ -216,14 +219,12 @@
               <input matInput formControlName="prixUnitaireHt" inputmode="decimal" />
             </mat-form-field>
             <mat-form-field>
-              <mat-label>TVA (0, 1, 2, 3)</mat-label>
-              <input
-                matInput
-                maxlength="1"
-                [value]="ligne.controls['tauxTva'].value"
-                (input)="appliquerCodeTva($index, $event)"
-              />
-              <mat-hint>{{ libelleTaux(ligne.controls['tauxTva'].value) }}</mat-hint>
+              <mat-label>TVA</mat-label>
+              <mat-select formControlName="tauxTva" (keydown)="raccourciTva($index, $event)">
+                @for (item of taux; track item.code) {
+                  <mat-option [value]="item.code">{{ item.libelle }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
           </div>
         } @else if (ligne.controls['type'].value === 'TEXTE') {
@@ -267,14 +268,12 @@
               <input matInput formControlName="prixUnitaireHt" inputmode="decimal" />
             </mat-form-field>
             <mat-form-field>
-              <mat-label>TVA (0, 1, 2, 3)</mat-label>
-              <input
-                matInput
-                maxlength="1"
-                [value]="ligne.controls['tauxTva'].value"
-                (input)="appliquerCodeTva($index, $event)"
-              />
-              <mat-hint>{{ libelleTaux(ligne.controls['tauxTva'].value) }}</mat-hint>
+              <mat-label>TVA</mat-label>
+              <mat-select formControlName="tauxTva" (keydown)="raccourciTva($index, $event)">
+                @for (item of taux; track item.code) {
+                  <mat-option [value]="item.code">{{ item.libelle }}</mat-option>
+                }
+              </mat-select>
             </mat-form-field>
           </div>
         }

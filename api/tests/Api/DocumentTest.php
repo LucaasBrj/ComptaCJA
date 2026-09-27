@@ -347,7 +347,8 @@ final class DocumentTest extends ApiTestCase
 
         $http->request('POST', '/api/documents/'.$devis['id'].'/facture-acompte');
         self::assertResponseStatusCodeSame(422);
-        self::assertStringContainsString('aucun montant', (string) $http->getResponse()->getContent(false));
+        $refus = json_decode((string) $http->getResponse()->getContent(false), true);
+        self::assertSame("Ce devis n'a pas d'acompte.", $refus['violations'][0]['message']);
 
         foreach (['-1', '100.01'] as $taux) {
             $http->request('POST', '/api/documents', [
