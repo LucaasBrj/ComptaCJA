@@ -13,7 +13,12 @@
   overflow: hidden;
 
   &__entete {
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  &__theme {
+    display: block;
+    margin: 0 1rem 1rem;
   }
 }
 

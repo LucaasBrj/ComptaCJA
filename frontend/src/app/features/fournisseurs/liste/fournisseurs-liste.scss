@@ -1,11 +1,4 @@
 .entete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-
   &__titre {
     margin: 0;
     font: var(--mat-sys-headline-small);
@@ -24,7 +17,7 @@
 }
 
 .filtres {
-  padding: 1rem 1rem 0;
+  padding: 1rem 1rem 1.5rem;
 
   &__recherche {
     width: 100%;
@@ -56,9 +49,17 @@ table {
 }
 
 .colonne-actions {
-  width: 6rem;
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  width: 8rem;
+  min-width: 8rem;
+  box-sizing: border-box;
   text-align: right;
   white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  background: var(--mat-sys-surface);
 }
 
 .vide-etat {

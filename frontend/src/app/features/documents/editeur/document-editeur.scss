@@ -1,10 +1,4 @@
 .entete {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-
   &__identite {
     display: flex;
     flex-wrap: wrap;
@@ -77,6 +71,7 @@
 
   &--accepte {
     background: color-mix(in srgb, #16a34a 22%, var(--mat-sys-surface));
+    color: var(--mat-sys-on-surface);
   }
 
   &--refuse {
@@ -86,6 +81,7 @@
 
   &--retard {
     background: color-mix(in srgb, #f97316 28%, var(--mat-sys-surface));
+    color: var(--mat-sys-on-surface);
   }
 }
 

@@ -10,6 +10,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
+import { InterrupteurApparence } from '../../shared/bouton-apparence/bouton-apparence';
 import { PageRecherche, ResultatRecherche, SuiviApiService } from '../../core/http/suivi-api.service';
 
 interface EntreeMenu {
@@ -30,6 +31,7 @@ interface EntreeMenu {
     MatListModule,
     MatButtonModule,
     MatMenuModule,
+    InterrupteurApparence,
   ],
   templateUrl: './shell.html',
   styleUrl: './shell.scss',

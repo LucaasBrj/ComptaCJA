@@ -1,6 +1,4 @@
 .entete {
-  margin-bottom: 1.25rem;
-
   &__titre {
     margin: 0;
     font: var(--mat-sys-headline-small);
@@ -118,6 +116,7 @@
 
 .tableau-defilant {
   overflow-x: auto;
+  margin-bottom: 2.5rem;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--mat-sys-corner-small);
 }

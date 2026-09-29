@@ -12,7 +12,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { DocumentApiService } from '../../../core/http/document-api.service';
 import { identifiantDepuisIri } from '../../../core/iri';
@@ -48,6 +48,7 @@ import { DocumentDetail, ResumeClient } from '../../../core/models/document.mode
 export class DocumentsListe {
   private readonly api = inject(DocumentApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   protected readonly colonnes = ['numero', 'type', 'client', 'dateEmission', 'montantTtc', 'statut'];
   protected readonly documents = signal<readonly DocumentDetail[]>([]);
@@ -121,12 +122,33 @@ export class DocumentsListe {
     return identifiantDepuisIri(document);
   }
 
+  protected ouvrir(document: DocumentDetail): void {
+    void this.router.navigate(['/documents', this.identifiant(document)]);
+  }
+
   protected libelleType(type: string): string {
     return this.libellesType[type as TypeDocument] ?? type;
   }
 
   protected libelleStatut(statut: string): string {
     return this.libellesStatut[statut as StatutDocument] ?? statut;
+  }
+
+  protected classeStatut(statut: string): string {
+    switch (statut) {
+      case 'ENVOYE':
+        return 'envoye';
+      case 'ACCEPTE':
+      case 'PAYE':
+        return 'accepte';
+      case 'REFUSE':
+      case 'ANNULE':
+        return 'refuse';
+      case 'EN_RETARD':
+        return 'retard';
+      default:
+        return 'brouillon';
+    }
   }
 
   protected nomClient(document: DocumentDetail): string {
