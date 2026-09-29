@@ -5,6 +5,21 @@
   min-height: 100vh;
   padding: 1.5rem;
   background-color: var(--mat-sys-surface-container);
+
+  &__theme {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    border-radius: 999px;
+    background: var(--mat-sys-surface);
+
+    ::ng-deep .mdc-label {
+      padding-left: 0.75rem;
+    }
+  }
 }
 
 .carte {
@@ -14,11 +29,6 @@
 
   &__entete {
     margin-bottom: 0.5rem;
-  }
-
-  &__theme {
-    display: block;
-    margin: 0 1rem 1rem;
   }
 }
 
