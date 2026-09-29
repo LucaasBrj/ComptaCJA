@@ -1,4 +1,4 @@
-<mat-toolbar color="primary" class="barre">
+<mat-toolbar class="barre">
   <button matIconButton type="button" aria-label="Afficher ou masquer le menu" (click)="basculerTiroir()">
     <mat-icon>menu</mat-icon>
   </button>
@@ -38,6 +38,9 @@
   </button>
 
   <mat-menu #menuCompte>
+    <div class="menu-apparence" (click)="$event.stopPropagation()">
+      <app-interrupteur-apparence />
+    </div>
     <button mat-menu-item type="button" (click)="deconnexion()">
       <mat-icon>logout</mat-icon>
       <span>Se déconnecter</span>

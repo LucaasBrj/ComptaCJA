@@ -9,6 +9,8 @@
       <mat-card-subtitle>Devis, facturation et gestion de chantiers</mat-card-subtitle>
     </mat-card-header>
 
+    <app-interrupteur-apparence class="carte__theme" />
+
     <mat-card-content>
       <form [formGroup]="formulaire" (ngSubmit)="soumettre()" class="formulaire">
         <mat-form-field>

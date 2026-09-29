@@ -45,7 +45,7 @@ export class ClientsListe {
   private readonly router = inject(Router);
 
   protected readonly typologies = TYPOLOGIES;
-  protected readonly colonnes = ['numeroClient', 'nom', 'typologie', 'contact', 'commune', 'actions'];
+  protected readonly colonnes = ['numeroClient', 'nom', 'typologie', 'contact', 'commune'];
 
   protected readonly clients = signal<readonly Client[]>([]);
   protected readonly total = signal(0);

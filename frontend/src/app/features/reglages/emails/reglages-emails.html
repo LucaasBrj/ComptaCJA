@@ -38,8 +38,8 @@
   </div>
 
   @if (formulaire.dirty) {
-    <div class="barre">
-      <button matButton="filled" type="submit" [disabled]="enregistrement()">Enregistrer</button>
-    </div>
+    <button class="enregistrer" matButton="filled" type="submit" [disabled]="enregistrement()">
+      Enregistrer
+    </button>
   }
 </form>

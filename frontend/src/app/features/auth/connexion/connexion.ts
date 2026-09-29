@@ -10,6 +10,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { Router } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { InterrupteurApparence } from '../../../shared/bouton-apparence/bouton-apparence';
 
 @Component({
   selector: 'app-connexion',
@@ -21,6 +22,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     MatButtonModule,
     MatIconModule,
     MatProgressBarModule,
+    InterrupteurApparence,
   ],
   templateUrl: './connexion.html',
   styleUrl: './connexion.scss',

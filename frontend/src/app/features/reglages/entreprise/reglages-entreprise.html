@@ -79,7 +79,7 @@
     </mat-form-field>
   </mat-card>
 
-  <mat-card>
+  <mat-card class="mentions">
     <h2>Mentions du PDF</h2>
     <div class="groupe groupe--trio">
       <mat-form-field>
@@ -127,8 +127,8 @@
   </mat-card>
 
   @if (formulaire.dirty) {
-    <div class="barre">
-      <button matButton="filled" type="submit" [disabled]="enregistrement()">Enregistrer</button>
-    </div>
+    <button class="enregistrer" matButton="filled" type="submit" [disabled]="enregistrement()">
+      Enregistrer
+    </button>
   }
 </form>

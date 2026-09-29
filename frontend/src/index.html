@@ -13,6 +13,14 @@
       rel="stylesheet"
     />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script>
+      (function () {
+        var valeur = localStorage.getItem('cja.apparence');
+        if (valeur === 'clair' || valeur === 'sombre') {
+          document.documentElement.dataset.apparence = valeur;
+        }
+      })();
+    </script>
   </head>
   <body>
     <app-root></app-root>
