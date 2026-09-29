@@ -12,6 +12,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTableModule } from '@angular/material/table';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { DocumentApiService } from '../../../core/http/document-api.service';
@@ -40,6 +41,7 @@ import { DocumentDetail, ResumeClient } from '../../../core/models/document.mode
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     MatProgressBarModule,
   ],
   templateUrl: './documents-liste.html',
@@ -50,7 +52,7 @@ export class DocumentsListe {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  protected readonly colonnes = ['numero', 'type', 'client', 'dateEmission', 'montantTtc', 'statut'];
+  protected readonly colonnes = ['numero', 'type', 'client', 'dateEmission', 'montantTtc', 'statut', 'pdf'];
   protected readonly documents = signal<readonly DocumentDetail[]>([]);
   protected readonly total = signal(0);
   protected readonly chargement = signal(false);
@@ -124,6 +126,21 @@ export class DocumentsListe {
 
   protected ouvrir(document: DocumentDetail): void {
     void this.router.navigate(['/documents', this.identifiant(document)]);
+  }
+
+  protected voirPdf(evenement: Event, document: DocumentDetail): void {
+    evenement.stopPropagation();
+    const fenetre = window.open('', '_blank');
+    if (!fenetre) {
+      return;
+    }
+
+    this.api.pdf(this.identifiant(document)).subscribe({
+      next: (blob) => {
+        fenetre.location.href = URL.createObjectURL(blob);
+      },
+      error: () => fenetre.close(),
+    });
   }
 
   protected libelleType(type: string): string {

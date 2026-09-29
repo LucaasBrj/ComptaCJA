@@ -41,7 +41,24 @@
 
   &:hover {
     background-color: var(--mat-sys-surface-container-highest);
+
+    .colonne-pdf {
+      background: var(--mat-sys-surface-container-highest);
+    }
   }
+}
+
+.colonne-pdf {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  width: 3.5rem;
+  min-width: 3.5rem;
+  box-sizing: border-box;
+  text-align: right;
+  overflow: visible;
+  text-overflow: clip;
+  background: var(--mat-sys-surface);
 }
 
 .mono {
