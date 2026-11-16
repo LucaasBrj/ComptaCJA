@@ -156,3 +156,95 @@ Les tests repartent d'un schéma vierge à chaque cas et couvrent le refus d'acc
 jeton, la numérotation séquentielle, la validation du SIRET, les filtres de recherche,
 l'assistant d'importation, le calcul de TVA, le PDF, les acomptes, la recherche, la
 duplication, l'export comptable, le retard et l'envoi par e-mail.
+
+## Déploiement en production (VPS Debian 13)
+
+La production utilise `docker-compose.prod.yml` (distinct de `docker-compose.yml`, réservé au
+développement) : **Caddy** (HTTPS, fichiers Angular, relais `/api`), **PHP-FPM**, **PostgreSQL 17**
+et **Gotenberg**. Seuls les ports 80 et 443 sont ouverts ; la base et Gotenberg restent sur un
+réseau Docker interne sans accès à Internet. Adminer et Mailpit ne sont pas déployés.
+
+### 1. Depuis ton PC : pousser le code et préparer l'accès SSH
+
+```powershell
+git add -A; git commit -m "Environnement de production"; git push
+
+ssh-keygen -t ed25519 -C "cja-vps"        # si tu n'as pas encore de clé ; accepte les valeurs par défaut
+Get-Content $HOME\.ssh\id_ed25519.pub      # la clé PUBLIQUE, à copier
+scp deploy/bootstrap-vps.sh root@IP_DU_VPS:/root/
+```
+
+### 2. Sur le VPS : préparer le serveur (une seule fois)
+
+```bash
+ssh root@IP_DU_VPS
+DEPLOY_SSH_PUBKEY="ssh-ed25519 AAAA... cja-vps" bash /root/bootstrap-vps.sh
+```
+
+Le script installe les mises à jour de sécurité automatiques, crée l'utilisateur `deploy`,
+**interdit la connexion root et par mot de passe** (clé SSH uniquement), configure le pare-feu
+`ufw` (22, 80, 443), `fail2ban`, Docker et une sauvegarde quotidienne. Avant de fermer la session
+root, vérifie depuis un autre terminal que `ssh deploy@IP_DU_VPS` fonctionne.
+
+### 3. Récupérer le code (en `deploy`)
+
+Le dépôt est cloné avec une clé de déploiement GitHub en lecture seule :
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/cja_deploy -N "" -C "cja-vps"
+cat ~/.ssh/cja_deploy.pub        # à ajouter sur GitHub : dépôt > Settings > Deploy keys (sans droit d'écriture)
+
+printf 'Host github.com\n  IdentityFile ~/.ssh/cja_deploy\n  IdentitiesOnly yes\n' >> ~/.ssh/config
+chmod 600 ~/.ssh/config
+git clone git@github.com:LucaasBrj/ComptaCJA.git ~/cja
+```
+
+### 4. Configurer les secrets (en `deploy`)
+
+```bash
+cd ~/cja
+cp .env.prod.example .env.prod && chmod 600 .env.prod
+openssl rand -hex 32     # à lancer trois fois : APP_SECRET, JWT_PASSPHRASE, POSTGRES_PASSWORD
+nano .env.prod           # SITE_ADDRESS = IP du VPS, secrets, MAILER_DSN (SMTP réel)
+```
+
+`.env.prod` n'est jamais versionné. Sans nom de domaine, le certificat HTTPS est auto-signé :
+le navigateur affiche un avertissement à accepter une fois. Avec un domaine, un enregistrement DNS
+de type A vers l'IP du VPS puis `SITE_ADDRESS=cja.exemple.fr` et `CADDY_TLS=tls vous@exemple.fr`
+suffisent pour obtenir un vrai certificat Let's Encrypt.
+
+### 5. Déployer
+
+```bash
+./deploy/deploy.sh
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec php \
+  php bin/console app:user:create ton@mail.fr --admin
+```
+
+L'application est ensuite sur `https://IP_DU_VPS`. Les **fixtures ne sont jamais chargées** en
+production : elles purgent la base et créent un compte au mot de passe connu.
+
+### Mises à jour, sauvegardes, restauration
+
+| Action | Commande (dans `~/cja`) |
+| --- | --- |
+| Mettre à jour | `./deploy/deploy.sh` (git pull, build, sauvegarde, migrations, redémarrage) |
+| Sauvegarder maintenant | `./deploy/backup.sh` |
+| Restaurer | `./deploy/restore.sh /var/backups/cja/db_AAAA-MM-JJ_HHMMSS.sql.gz` |
+| Journaux | `docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f web php` |
+| État | `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` |
+
+Une sauvegarde de la base et des fichiers importés est faite chaque nuit à 3 h 15 dans
+`/var/backups/cja` (14 jours conservés ; `systemctl list-timers cja-backup.timer`). Ces copies
+restent sur le VPS : **copie-les régulièrement ailleurs** (rclone, rsync, ou l'option de snapshot de
+ton hébergeur). Conserve aussi une copie de `.env.prod` dans un gestionnaire de mots de passe.
+
+### Sécurité : ce qui est en place
+
+- SSH par clé uniquement, root interdit, `fail2ban`, pare-feu `ufw`, mises à jour automatiques
+  (redémarrage nocturne à 4 h 30 si le noyau l'exige).
+- Conteneurs sans privilèges superflus (`cap_drop: ALL`, `no-new-privileges`), PHP en utilisateur
+  non-root, base et Gotenberg sans accès à Internet et sans port publié.
+- En-têtes HSTS et Content-Security-Policy, documentation `/api/docs` fermée, aucune requête
+  cross-origin acceptée (front et API partagent la même origine).
+- Secrets propres à la production (jamais ceux de `api/.env` ou `.env.dev`).

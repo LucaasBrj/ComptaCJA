@@ -1,0 +1,8 @@
+# Contexte de build racine (image "web" : frontend + deploy/Caddyfile).
+.git
+api
+**/node_modules
+frontend/dist
+frontend/.angular
+**/.env*
+docker-compose*.yml

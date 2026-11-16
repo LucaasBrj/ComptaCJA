@@ -2,3 +2,6 @@
 .idea/
 .vscode/
 *.log
+
+# Configuration de production (secrets) : jamais versionnee
+.env.prod
