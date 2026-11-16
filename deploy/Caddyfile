@@ -1,0 +1,68 @@
+# Caddy de production.
+#   SITE_ADDRESS : IP ou nom de domaine du serveur (sans schema), ex. 203.0.113.10 ou cja.exemple.fr
+#   CADDY_TLS    : "tls internal" (certificat auto-signe, cas d'une IP)
+#                  ou "tls vous@exemple.fr" (Let's Encrypt, cas d'un vrai domaine)
+{
+	# Pas d'API d'administration exposee, meme en local au conteneur.
+	admin off
+}
+
+{$SITE_ADDRESS} {
+	{$CADDY_TLS}
+
+	encode zstd gzip
+
+	log {
+		output stdout
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		# object-src/frame-src en blob: : le PDF est ouvert depuis un blob dans un nouvel onglet.
+		# Polices Google : le CSS est inline au build, les fichiers viennent de fonts.gstatic.com.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; object-src 'self' blob:; frame-src 'self' blob:; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		-Server
+	}
+
+	# La documentation interactive de l'API reste fermee en production.
+	@docs path /api/docs /api/docs/* /api/docs.*
+	handle @docs {
+		respond "Not Found" 404
+	}
+
+	# API Symfony : toutes les requetes passent par public/index.php dans le conteneur php.
+	@api path /api /api/*
+	handle @api {
+		request_body {
+			max_size 25MB
+		}
+		rewrite * /index.php
+		reverse_proxy php:9000 {
+			transport fastcgi {
+				root /app/public
+				split .php
+			}
+		}
+	}
+
+	# Application Angular (fichiers statiques) avec repli sur index.html pour le routage.
+	handle {
+		root * /srv
+
+		# Fichiers hachés par Angular : cache d'un an. Le reste (index.html...) : toujours revalide.
+		# Deux matchers exclusifs : deux directives "header" sur le meme champ se contrediraient.
+		@hashed path_regexp hashed ^/.+-[A-Za-z0-9]{8}\.(js|css)$
+		@mutable {
+			not path_regexp ^/.+-[A-Za-z0-9]{8}\.(js|css)$
+		}
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header @mutable Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		file_server
+	}
+}

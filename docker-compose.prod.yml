@@ -1,0 +1,129 @@
+# Stack de PRODUCTION (VPS). Ne pas confondre avec docker-compose.yml, qui sert au developpement.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Seul "web" publie des ports (80 et 443). La base et Gotenberg vivent sur un reseau interne
+# sans acces a Internet ; seul "php" a une sortie (envoi d'e-mails par SMTP).
+
+name: cja-prod
+
+x-durcissement: &durcissement
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "5"
+
+services:
+  web:
+    <<: *durcissement
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.prod
+    image: cja-web:latest
+    depends_on:
+      - php
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?SITE_ADDRESS manquant dans .env.prod}
+      CADDY_TLS: ${CADDY_TLS:-tls internal}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    mem_limit: 256m
+
+  php:
+    <<: *durcissement
+    build:
+      context: ./api
+      dockerfile: Dockerfile.prod
+    image: cja-php:latest
+    depends_on:
+      database:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: ${APP_SECRET:?APP_SECRET manquant dans .env.prod}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cja}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env.prod}@database:5432/${POSTGRES_DB:-cja}?serverVersion=17&charset=utf8
+      JWT_PASSPHRASE: ${JWT_PASSPHRASE:?JWT_PASSPHRASE manquant dans .env.prod}
+      MAILER_DSN: ${MAILER_DSN:?MAILER_DSN manquant dans .env.prod}
+      GOTENBERG_URL: http://gotenberg:3000/
+      # Meme origine pour le front et l'API : aucune requete cross-origin n'est autorisee.
+      CORS_ALLOW_ORIGIN: "^$$"
+    volumes:
+      - api_imports:/app/var/imports
+      - api_jwt:/app/config/jwt
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9000"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    networks:
+      - edge
+      - backend
+    mem_limit: 768m
+
+  database:
+    <<: *durcissement
+    image: postgres:17-alpine
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cja}
+      POSTGRES_USER: ${POSTGRES_USER:-cja}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant dans .env.prod}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+    mem_limit: 1g
+
+  gotenberg:
+    <<: *durcissement
+    image: gotenberg/gotenberg:8
+    command:
+      - "gotenberg"
+      - "--chromium-disable-javascript=true"
+      - "--chromium-allow-list=file:///tmp/.*"
+    networks:
+      - backend
+    mem_limit: 1g
+
+networks:
+  edge: {}
+  # internal : aucune route vers Internet pour la base et Gotenberg (Chromium compris).
+  backend:
+    internal: true
+
+volumes:
+  database_data:
+  api_imports:
+  api_jwt:
+  caddy_data:
+  caddy_config:

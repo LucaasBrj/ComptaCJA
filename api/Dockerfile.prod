@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+# Image de production de l'API : PHP-FPM, dependances sans dev, cache Symfony pre-chauffe.
+# Build : docker compose -f docker-compose.prod.yml build php
+
+FROM php:8.4-fpm-alpine AS base
+
+COPY --from=ghcr.io/mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+# bcmath est obligatoire (calculs de TVA et de totaux).
+RUN install-php-extensions pdo_pgsql intl zip gd opcache bcmath
+
+
+FROM base AS build
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+RUN apk add --no-cache git unzip
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    APP_ENV=prod \
+    APP_DEBUG=0
+
+WORKDIR /app
+
+# Couche mise en cache tant que composer.lock ne change pas.
+COPY composer.json composer.lock symfony.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+
+COPY . .
+
+RUN composer dump-autoload --no-dev --optimize --classmap-authoritative --no-interaction \
+    && APP_SECRET=build-only php bin/console cache:warmup --env=prod --no-debug \
+    && mkdir -p var/imports config/jwt \
+    && chown -R www-data:www-data var config/jwt
+
+
+FROM base AS final
+
+COPY docker/php-prod.ini /usr/local/etc/php/conf.d/zz-prod.ini
+COPY docker/php-fpm-prod.conf /usr/local/etc/php-fpm.d/zz-prod.conf
+
+WORKDIR /app
+
+# Code en lecture seule pour www-data ; seuls var/ et config/jwt/ sont inscriptibles.
+COPY --from=build /app /app
+
+USER www-data
+
+EXPOSE 9000
+CMD ["php-fpm"]

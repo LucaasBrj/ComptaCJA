@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+# Image "web" : build Angular, puis Caddy qui sert les fichiers statiques et relaie /api vers PHP-FPM.
+# Contexte de build : racine du depot (voir docker-compose.prod.yml).
+
+FROM node:22-alpine AS build
+
+ENV NG_CLI_ANALYTICS=false
+
+WORKDIR /app
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npx ng build --configuration production
+
+
+FROM caddy:2-alpine
+
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /app/dist/frontend/browser /srv

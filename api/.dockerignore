@@ -1,5 +1,13 @@
 vendor
 var
 .env.local
+.env.local.dist
 .env.*.local
+.env.test
 config/jwt/*.pem
+tests
+.phpunit.cache
+phpunit.dist.xml
+Dockerfile
+Dockerfile.prod
+.dockerignore

@@ -1,2 +1,9 @@
 *.sh text eol=lf
 api/bin/* text eol=lf
+deploy/Caddyfile text eol=lf
+**/Dockerfile* text eol=lf
+**/.dockerignore text eol=lf
+.dockerignore text eol=lf
+docker-compose*.yml text eol=lf
+.env.prod.example text eol=lf
+api/docker/* text eol=lf
