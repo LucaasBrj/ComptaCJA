@@ -1,0 +1,2 @@
+*.sh text eol=lf
+api/bin/* text eol=lf

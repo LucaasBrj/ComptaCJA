@@ -48,5 +48,48 @@ services:
     ports:
       - "8081:8080"
 
+  # Profil "app" : API Symfony + front Angular dans Docker (parcours Windows).
+  # Lancement : docker compose --profile app up -d --build
+  api:
+    profiles: ["app"]
+    build: ./api
+    container_name: cja_api
+    depends_on:
+      database:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+      mailpit:
+        condition: service_started
+    environment:
+      DATABASE_URL: "postgresql://cja:cja@database:5432/cja?serverVersion=17&charset=utf8"
+      GOTENBERG_URL: "http://gotenberg:3000/"
+      MAILER_DSN: "smtp://mailpit:1025"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+      - api_vendor:/app/vendor
+      - api_var:/app/var
+
+  frontend:
+    profiles: ["app"]
+    image: node:22
+    container_name: cja_frontend
+    working_dir: /app
+    depends_on:
+      - api
+    environment:
+      API_URL: "http://api:8000"
+    command: sh -c "npm ci && npx ng serve --host 0.0.0.0 --poll 2000"
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+
 volumes:
   database_data:
+  api_vendor:
+  api_var:
+  frontend_node_modules:

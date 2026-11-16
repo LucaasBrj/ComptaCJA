@@ -16,7 +16,35 @@ brew install composer symfony node colima docker docker-compose
 colima start
 ```
 
-## Démarrage
+## Démarrage sous Windows (Docker Desktop)
+
+Seul Docker Desktop (avec WSL2) est nécessaire : PHP, Composer et Node tournent dans des
+conteneurs, via le profil Compose `app`.
+
+```powershell
+winget install Docker.DockerDesktop        # puis lancer Docker Desktop
+docker compose --profile app up -d --build
+docker compose exec api php bin/console doctrine:fixtures:load --no-interaction
+```
+
+Le premier démarrage installe les dépendances (`composer install`, `npm ci`), génère les clés
+JWT et applique les migrations : suivre l'avancement avec `docker compose logs -f api frontend`.
+L'application est ensuite sur http://localhost:4200 (API sur http://127.0.0.1:8000/api).
+
+```powershell
+docker compose exec api php bin/console doctrine:database:create --env=test --if-not-exists   # une seule fois
+docker compose exec api php bin/phpunit                                   # tests
+docker compose exec api php bin/console app:user:create prenom@domaine.fr --admin
+docker compose --profile app down                                         # arrêt
+```
+
+Conseil : placer le projet hors de OneDrive (par exemple `C:\dev\CJA`) pour éviter les
+verrous de fichiers et la synchronisation de `vendor/` et `node_modules/`.
+
+## Démarrage (macOS / Linux, natif)
+
+Copier d'abord `api/.env.local.dist` vers `api/.env.local` : il aligne la base et la boîte
+e-mail sur les services de `docker-compose.yml`.
 
 ```bash
 # 1. Services d'infrastructure
